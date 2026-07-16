@@ -309,6 +309,15 @@ public final class WriteDecodeService {
 
     private WriteDecodeResult decodeCompressor(byte[] payload, String commandHex) {
         requireLen(payload, 15, "compressor");
+        int channel = u8(payload, 4);
+        if (channel <= 0x03 && payload.length >= 19) {
+            return decodeInputCompressor(payload, commandHex);
+        }
+        return decodeOutputCompressor(payload, commandHex);
+    }
+
+    private WriteDecodeResult decodeOutputCompressor(byte[] payload, String commandHex) {
+        requireLen(payload, 15, "compressor");
         int output = u8(payload, 4);
         int ratio = u16le(payload, 5);
         int attack = u16le(payload, 7);
@@ -330,6 +339,33 @@ public final class WriteDecodeService {
         return match(commandHex, "$.parameters.compressor.write",
                 "Compressor " + lib.outputName(output),
                 details);
+    }
+
+    private WriteDecodeResult decodeInputCompressor(byte[] payload, String commandHex) {
+        requireLen(payload, 19, "input compressor");
+        int input = u8(payload, 4);
+        int ratio = u16le(payload, 5);
+        int attack = u16le(payload, 7);
+        int release = u16le(payload, 9);
+        int knee = u16le(payload, 11);
+        int threshold = u16le(payload, 13);
+        int frequency = u16le(payload, 15);
+        int typeContext = u8(payload, 17);
+        int type = u8(payload, 18);
+
+        return match(commandHex, "$.parameters.input_compressor.write",
+                "Input compressor " + lib.inputName(input),
+                List.of(
+                        "channel       = " + lib.inputName(input),
+                        "ratio_raw     = " + ratio + " -> " + lib.compressorRatio(ratio),
+                        "attack_raw    = " + attack + " -> " + (attack + 1) + " ms",
+                        "release_raw   = " + release + " -> " + (release + 1) + " ms",
+                        "knee_raw      = " + knee + " -> " + knee + " dB",
+                        "threshold_raw = " + threshold + " -> " + format1((threshold / 2.0) - 90.0) + " dB",
+                        "frequency     = " + formatFrequency(filterFrequencyHz(frequency)) + " (raw " + frequency + ")",
+                        "type_raw      = " + type + " -> " + lib.inputCompressorType(type),
+                        "type_context  = 0x%02X".formatted(typeContext)
+                ));
     }
 
     private WriteDecodeResult decodeLimiter(byte[] payload, String commandHex) {

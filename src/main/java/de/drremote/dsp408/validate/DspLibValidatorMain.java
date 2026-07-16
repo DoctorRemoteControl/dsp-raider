@@ -21,6 +21,11 @@ import java.util.regex.Pattern;
 public final class DspLibValidatorMain {
 
     public static void main(String[] args) throws Exception {
+        if (args.length > 0 && "--compare-structure".equals(args[0])) {
+            runStructureCompare(args);
+            return;
+        }
+
         Path jsonPath = args.length > 0 ? Path.of(args[0]) : Path.of("DspLib-408.json");
 
         ObjectMapper mapper = new ObjectMapper();
@@ -51,6 +56,241 @@ public final class DspLibValidatorMain {
             System.exit(1);
         }
         System.exit(0);
+    }
+
+    private static void runStructureCompare(String[] args) throws Exception {
+        if (args.length < 3) {
+            System.err.println("Usage: DspLibValidatorMain --compare-structure <base.json> <candidate.json> [--allow-prefix <json.path>]...");
+            System.exit(2);
+        }
+
+        Path basePath = Path.of(args[1]);
+        Path candidatePath = Path.of(args[2]);
+        Set<String> allowedPrefixes = new LinkedHashSet<>();
+
+        for (int i = 3; i < args.length; i++) {
+            if (!"--allow-prefix".equals(args[i]) || i + 1 >= args.length) {
+                System.err.println("Unexpected argument: " + args[i]);
+                System.err.println("Usage: DspLibValidatorMain --compare-structure <base.json> <candidate.json> [--allow-prefix <json.path>]...");
+                System.exit(2);
+            }
+            allowedPrefixes.add(args[++i]);
+        }
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode base = mapper.readTree(basePath.toFile());
+        JsonNode candidate = mapper.readTree(candidatePath.toFile());
+
+        DspLibStructureComparator comparator = new DspLibStructureComparator(allowedPrefixes);
+        List<ValidationIssue> issues = comparator.compare(base, candidate);
+
+        long errorCount = issues.stream().filter(i -> i.severity() == ValidationSeverity.ERROR).count();
+        long infoCount = issues.stream().filter(i -> i.severity() == ValidationSeverity.INFO).count();
+
+        System.out.println("DSP408 library structure comparison");
+        System.out.println("Base      : " + basePath.toAbsolutePath());
+        System.out.println("Candidate : " + candidatePath.toAbsolutePath());
+        System.out.println("Errors    : " + errorCount);
+        System.out.println("Infos     : " + infoCount);
+        if (!allowedPrefixes.isEmpty()) {
+            System.out.println("Allowed   : " + String.join(", ", allowedPrefixes));
+        }
+        System.out.println();
+
+        for (ValidationIssue issue : issues) {
+            System.out.println(issue);
+        }
+
+        System.exit(errorCount > 0 ? 2 : 0);
+    }
+}
+
+final class DspLibStructureComparator {
+    private final Set<String> allowedPrefixes;
+
+    DspLibStructureComparator(Set<String> allowedPrefixes) {
+        this.allowedPrefixes = Collections.unmodifiableSet(new LinkedHashSet<>(allowedPrefixes));
+    }
+
+    List<ValidationIssue> compare(JsonNode base, JsonNode candidate) {
+        List<ValidationIssue> issues = new ArrayList<>();
+        compareShapes(JsonShape.from(base), JsonShape.from(candidate), "$", issues);
+        return issues.stream()
+                .filter(issue -> !isAllowed(issue.path()))
+                .sorted(Comparator
+                        .comparing(ValidationIssue::severity)
+                        .thenComparing(ValidationIssue::code)
+                        .thenComparing(ValidationIssue::path))
+                .toList();
+    }
+
+    private void compareShapes(JsonShape base, JsonShape candidate, String path, List<ValidationIssue> issues) {
+        if (base.kind() != candidate.kind()) {
+            issues.add(error(
+                    "JSON_STRUCTURE_TYPE_MISMATCH",
+                    path,
+                    "Base has " + base.kind() + " but candidate has " + candidate.kind()
+            ));
+            return;
+        }
+
+        if (base.kind() == JsonShapeKind.OBJECT) {
+            compareObjectShapes(base, candidate, path, issues);
+            return;
+        }
+
+        if (base.kind() == JsonShapeKind.ARRAY) {
+            JsonShape baseElement = base.elementShape();
+            JsonShape candidateElement = candidate.elementShape();
+            if (baseElement == null && candidateElement == null) {
+                return;
+            }
+            if (baseElement == null || candidateElement == null) {
+                issues.add(error(
+                        "JSON_ARRAY_ELEMENT_STRUCTURE_MISMATCH",
+                        path + "[]",
+                        baseElement == null
+                                ? "Base array is empty but candidate array has element structure"
+                                : "Base array has element structure but candidate array is empty"
+                ));
+                return;
+            }
+            compareShapes(baseElement, candidateElement, path + "[]", issues);
+        }
+    }
+
+    private void compareObjectShapes(JsonShape base, JsonShape candidate, String path, List<ValidationIssue> issues) {
+        Set<String> baseFields = base.fields().keySet();
+        Set<String> candidateFields = candidate.fields().keySet();
+
+        for (String field : baseFields) {
+            if (!candidateFields.contains(field)) {
+                issues.add(error(
+                        "JSON_STRUCTURE_FIELD_MISSING_IN_CANDIDATE",
+                        childPath(path, field),
+                        "Field exists in base but not in candidate"
+                ));
+            }
+        }
+
+        for (String field : candidateFields) {
+            if (!baseFields.contains(field)) {
+                issues.add(error(
+                        "JSON_STRUCTURE_FIELD_ADDED_IN_CANDIDATE",
+                        childPath(path, field),
+                        "Field exists in candidate but not in base"
+                ));
+            }
+        }
+
+        for (String field : baseFields) {
+            if (candidateFields.contains(field)) {
+                compareShapes(base.fields().get(field), candidate.fields().get(field), childPath(path, field), issues);
+            }
+        }
+    }
+
+    private boolean isAllowed(String path) {
+        for (String prefix : allowedPrefixes) {
+            if (path.equals(prefix) || path.startsWith(prefix + ".") || path.startsWith(prefix + "[")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String childPath(String parent, String field) {
+        return parent + "." + field;
+    }
+
+    private static ValidationIssue error(String code, String path, String message) {
+        return new ValidationIssue(ValidationSeverity.ERROR, code, path, message);
+    }
+}
+
+enum JsonShapeKind {
+    OBJECT,
+    ARRAY,
+    STRING,
+    NUMBER,
+    BOOLEAN,
+    NULL,
+    BINARY,
+    POJO,
+    MISSING
+}
+
+record JsonShape(
+        JsonShapeKind kind,
+        Map<String, JsonShape> fields,
+        JsonShape elementShape
+) {
+    static JsonShape from(JsonNode node) {
+        if (node == null || node.isMissingNode()) {
+            return leaf(JsonShapeKind.MISSING);
+        }
+        if (node.isObject()) {
+            Map<String, JsonShape> fields = new LinkedHashMap<>();
+            Iterator<Map.Entry<String, JsonNode>> it = node.fields();
+            while (it.hasNext()) {
+                Map.Entry<String, JsonNode> entry = it.next();
+                fields.put(entry.getKey(), from(entry.getValue()));
+            }
+            return new JsonShape(JsonShapeKind.OBJECT, Collections.unmodifiableMap(fields), null);
+        }
+        if (node.isArray()) {
+            JsonShape elementShape = null;
+            for (JsonNode item : node) {
+                elementShape = merge(elementShape, from(item));
+            }
+            return new JsonShape(JsonShapeKind.ARRAY, Map.of(), elementShape);
+        }
+        if (node.isTextual()) {
+            return leaf(JsonShapeKind.STRING);
+        }
+        if (node.isNumber()) {
+            return leaf(JsonShapeKind.NUMBER);
+        }
+        if (node.isBoolean()) {
+            return leaf(JsonShapeKind.BOOLEAN);
+        }
+        if (node.isNull()) {
+            return leaf(JsonShapeKind.NULL);
+        }
+        if (node.isBinary()) {
+            return leaf(JsonShapeKind.BINARY);
+        }
+        if (node.isPojo()) {
+            return leaf(JsonShapeKind.POJO);
+        }
+        return leaf(JsonShapeKind.MISSING);
+    }
+
+    private static JsonShape merge(JsonShape current, JsonShape next) {
+        if (current == null) {
+            return next;
+        }
+        if (current.kind() != next.kind()) {
+            Map<String, JsonShape> variants = new LinkedHashMap<>();
+            variants.put(current.kind().name(), current);
+            variants.put(next.kind().name(), next);
+            return new JsonShape(JsonShapeKind.OBJECT, Collections.unmodifiableMap(variants), null);
+        }
+        if (current.kind() == JsonShapeKind.OBJECT) {
+            Map<String, JsonShape> merged = new LinkedHashMap<>(current.fields());
+            for (Map.Entry<String, JsonShape> entry : next.fields().entrySet()) {
+                merged.merge(entry.getKey(), entry.getValue(), JsonShape::merge);
+            }
+            return new JsonShape(JsonShapeKind.OBJECT, Collections.unmodifiableMap(merged), null);
+        }
+        if (current.kind() == JsonShapeKind.ARRAY) {
+            return new JsonShape(JsonShapeKind.ARRAY, Map.of(), merge(current.elementShape(), next.elementShape()));
+        }
+        return current;
+    }
+
+    private static JsonShape leaf(JsonShapeKind kind) {
+        return new JsonShape(kind, Map.of(), null);
     }
 }
 

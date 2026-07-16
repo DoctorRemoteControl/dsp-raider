@@ -443,6 +443,37 @@ Example:
 java -cp target\tracks-dsp-script-all.jar de.drremote.dsp408.raw.DspRawWriteTool --host 192.168.0.166 --port 9761 --payload "00 01 03 35 04 01"
 ```
 
+### FIR408 phase readback verification
+
+For a direct, all-channel phase storage check with automatic safety restore:
+
+```powershell
+java -cp target\tracks-dsp-script-all.jar `
+  de.drremote.dsp408.raw.Fir408PhaseReadVerifier
+```
+
+The verifier keeps all twelve channels muted, tests each phase as
+`0 degrees -> 180 degrees -> 0 degrees`, and compares the complete config
+before and after. Results are written below
+`out/fir/fir408-phase-readback-verification`.
+
+### FIR408 gate readback verification
+
+For a direct storage check of all four gate fields on the write-confirmed
+inputs InA and InD:
+
+```powershell
+java -cp target\tracks-dsp-script-all.jar `
+  de.drremote.dsp408.raw.Fir408GateReadVerifier
+```
+
+The verifier derives the current gate tuples from the assembled FIR408
+configuration, mutes all twelve channels, changes only one field at a time,
+and immediately restores the original tuple. It never sends an unmute
+command. The complete configuration must match byte-for-byte after the test.
+Results are written below
+`out/fir/fir408-gate-readback-verification`.
+
 Examples from the tool:
 
 ### Mute Out1

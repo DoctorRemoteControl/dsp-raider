@@ -21,6 +21,7 @@ public final class DspLibLookup {
     private final List<String> peqTypes;
     private final List<String> crossoverSlopes;
     private final List<String> compressorRatios;
+    private final List<String> inputCompressorTypes;
     private final Map<Integer, String> presetSlotByIndex;
     private final Map<Integer, String> testToneSourceByIndex;
     private final Map<Integer, String> testToneFreqByIndex;
@@ -35,6 +36,7 @@ public final class DspLibLookup {
         this.peqTypes = textArray(root.at("/enums/peq_types"));
         this.crossoverSlopes = textArray(root.at("/enums/crossover_slopes"));
         this.compressorRatios = textArray(root.at("/enums/compressor_ratios"));
+        this.inputCompressorTypes = textArray(root.at("/enums/input_compressor_types"));
         this.presetSlotByIndex = invertHexKeyMap(root.at("/parameters/preset_management/write/load/preset_index_mapping"));
         this.testToneSourceByIndex = invertHexKeyMap(root.at("/parameters/test_tone_generator/write/source_index_mapping"));
         this.testToneFreqByIndex = invertSelectorMap(root.at("/value_models/test_tone_sine_frequency/selector_mapping"));
@@ -98,6 +100,10 @@ public final class DspLibLookup {
 
     public String compressorRatio(int index) {
         return indexed(compressorRatios, index, "ratio#" + index);
+    }
+
+    public String inputCompressorType(int index) {
+        return indexed(inputCompressorTypes, index, "type#" + index);
     }
 
     public String crossoverSlopeByRaw(int raw) {
