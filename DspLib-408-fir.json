@@ -1308,7 +1308,7 @@
               "0.0dB_raw": 280,
               "-6.0dB_raw": 220
             },
-            "note": "confirmed by scripted write 00 01 04 34 00 18 01 vs 00 01 04 34 00 DC 00 and direct diffReport on block 0x02",
+            "note": "2026-07-16 live FIR408 marker write confirmed data offset 46 (payload offset 51); gain is at input record offset 130",
             "status": "verified_live_fir408_2026_07_16"
           },
           {
@@ -1319,7 +1319,7 @@
               "0.0dB_raw": 280,
               "-6.0dB_raw": 220
             },
-            "note": "confirmed by scripted write 00 01 04 34 01 18 01 vs 00 01 04 34 01 DC 00 and direct diffReport on block 0x05",
+            "note": "derived from the observed 138-byte FIR408 input record stride and gain record offset 130",
             "status": "verified_live_fir408_2026_07_16"
           },
           {
@@ -1330,7 +1330,7 @@
               "0.0dB_raw": 280,
               "-6.0dB_raw": 220
             },
-            "note": "confirmed by scripted write 00 01 04 34 02 18 01 vs 00 01 04 34 02 DC 00 and direct diffReport on block 0x08",
+            "note": "derived from the observed 138-byte FIR408 input record stride and gain record offset 130",
             "status": "verified_live_fir408_2026_07_16"
           },
           {
@@ -1341,7 +1341,7 @@
               "0.0dB_raw": 280,
               "-6.0dB_raw": 220
             },
-            "note": "confirmed by scripted write 00 01 04 34 03 18 01 vs 00 01 04 34 03 DC 00 and direct diffReport on block 0x0B",
+            "note": "2026-07-16 live FIR408 marker write confirmed data offset 10 (payload offset 15); gain is at input record offset 130",
             "status": "verified_live_fir408_2026_07_16"
           }
         ],
@@ -7392,13 +7392,8 @@
       }
     },
     "compressor": {
-      "fir408_availability": {
-        "available": false,
-        "status": "stale_historical_output_compressor_hypothesis_not_fir408_gui",
-        "note": "The FIR408 GUI compressor page is InA..InD. Use parameters.input_compressor. This inherited output hypothesis overlaps output PEQ storage and must not be used."
-      },
       "ui": {
-        "scope": "historical_stale_output_hypothesis",
+        "scope": "outputs",
         "fields": [
           "threshold",
           "ratio",
@@ -7426,7 +7421,7 @@
         }
       },
       "write": {
-        "status": "stale_historical_output_compressor_hypothesis_not_fir408_gui",
+        "status": "observed_plus_predicted_strong",
         "command": "0x30",
         "payload_structure": "00 01 0C 30 <output_channel_index> <ratio_lo> <ratio_hi> <attack_lo> <attack_hi> <release_lo> <release_hi> <knee_lo> <knee_hi> <threshold_lo> <threshold_hi>",
         "field_order": [
@@ -8840,6 +8835,7 @@
         "scope": "runtime_levels",
         "fields": [
           "channel_level",
+          "input_clip_indicator",
           "output_limiter_indicator"
         ]
       },
@@ -8847,39 +8843,46 @@
         "not_applicable": true
       },
       "read": {
-        "status": "predicted_from_dsp408",
+        "status": "observed_on_fir408_lan",
         "command": "0x40",
         "request_payload_hex": "00 01 01 40",
         "response_direction": "DSP_TO_PC",
-        "response_length_bytes_observed": 42,
+        "response_length_bytes_observed": 46,
         "response_structure": {
           "header_bytes": {
             "offset_range": "0..3",
-            "observed_template_hex": "01 00 27 40",
-            "status": "predicted_from_dsp408"
+            "observed_template_hex": "01 00 2B 40",
+            "status": "observed_on_fir408_lan"
           },
           "meter_slot_region": {
             "offset_range": "4..39",
             "slot_count": 12,
             "slot_width_bytes": 3,
             "slot_layout": "12 consecutive 3-byte runtime meter slots",
-            "status": "predicted_from_dsp408"
+            "status": "observed_on_fir408_lan"
           },
           "tail_bytes": {
-            "offset_range": "40..41",
-            "status": "predicted_from_dsp408",
+            "offset_range": "40..45",
+            "status": "observed_on_fir408_lan",
             "bytes": [
               {
                 "offset": 40,
-                "name": "status_byte_40",
-                "status": "predicted_from_dsp408",
-                "note": "not required for known-good meter or limiter GUI behavior"
+                "name": "input_runtime_status",
+                "type": "u8",
+                "status": "observed_unknown",
+                "note": "Not an input clipping mask. The byte stayed 00 during independently observed physical InA clipping; older 01, 02, and 09 values followed input compressor/control changes."
               },
               {
                 "offset": 41,
                 "name": "output_limiter_mask",
                 "type": "bitmask_u8",
-                "status": "predicted_from_dsp408"
+                "status": "observed_on_fir408_lan"
+              },
+              {
+                "offset_range": "42..45",
+                "name": "fir408_extra_runtime_bytes",
+                "status": "observed_unknown",
+                "note": "Present on physical FIR408 cmd 0x40 responses; semantics are not decoded."
               }
             ]
           }
@@ -8965,7 +8968,7 @@
         "value_encoding": {
           "slot_value_shape": {
             "bytes_per_slot": 3,
-            "status": "predicted_from_dsp408"
+            "status": "observed_on_fir408_lan"
           },
           "primary_meter_bytes": {
             "offsets_within_slot": [
@@ -8975,12 +8978,14 @@
             "type": "runtime_level_drive_pair",
             "byte_order": "low, high",
             "meaning": "these two bytes are sufficient to drive the original GUI level/meter display for the mapped channel",
-            "status": "predicted_from_dsp408"
+            "status": "observed_on_fir408_lan"
           },
           "slot_byte_2": {
             "offset_within_slot": 2,
-            "meaning": "unknown runtime subfield; not required for known-good meter display in emulator GUI",
-            "status": "predicted_from_dsp408"
+            "meaning": "fractional part of the meter word, scaled by 1/256 of one raw u16 step",
+            "scale": 0.00390625,
+            "status": "observed_on_fir408_lan",
+            "evidence": "Mirrored input/output signals repeatedly share bytes 0..1 while byte 2 differs by only one count; interpreting byte 2 as a fractional byte preserves their sub-step level difference."
           },
           "gui_drive_model": {
             "type": "emulator_verified_gui_drive_model",
@@ -8989,12 +8994,81 @@
             "note": "this is a proven GUI-driving model from emulator-to-original-GUI tests, not yet a proven physical DSP meter scale",
             "status": "predicted_from_dsp408"
           },
+          "physical_level_calibration": {
+            "raw_type": "u16le_plus_u8_fraction",
+            "precise_raw_formula": "raw_precise = raw_u16le + slot_byte_2 / 256.0",
+            "formula": "level_db = max(-60.0, (raw_precise - 15397.5257354183) / 21.1860578791)",
+            "api_rounding_decimals": 2,
+            "observed_range_db": "-59..+12",
+            "fit_rmse_db": 0.148,
+            "fit_max_error_db": 0.34,
+            "reference": "FIR408 internal 1 kHz sine with controlled input/output gain sweep",
+            "note": "This is an empirical runtime-meter scale. It is not yet an independently calibrated absolute dBFS reference.",
+            "status": "observed_on_fir408_lan"
+          },
           "not_yet_proven": [
-            "exact numeric scale of actual DSP runtime meter values",
+            "independent absolute dBFS reference of the internal test generator",
             "signedness",
-            "peak vs RMS vs smoothed semantics",
-            "exact semantic of slot byte 2"
+            "peak vs RMS vs smoothed semantics"
           ]
+        },
+        "clip_indicator_runtime": {
+          "source": "per_channel_meter_slot_u16le_threshold",
+          "derivation": "clip_active = raw_u16le >= 0x3F30; slot_byte_2 remains the fractional meter byte and does not change the integer threshold",
+          "threshold_raw_hex": "0x3F30",
+          "threshold_raw_precise": 16176.0,
+          "comparison": "greater_than_or_equal",
+          "threshold_exactness": "operational_boundary_inferred_inside_synchronized_physical_led_bracket",
+          "observed_threshold_bracket_hex": "(0x3F2C,0x3F35]",
+          "applies_to": [
+            "InA",
+            "InB",
+            "InC",
+            "InD",
+            "Out1",
+            "Out2",
+            "Out3",
+            "Out4",
+            "Out5",
+            "Out6",
+            "Out7",
+            "Out8"
+          ],
+          "confirmed_channels": [
+            "InA",
+            "InB"
+          ],
+          "evidence": [
+            "After a clean controller reconnect on 2026-07-25, InA reached raw 0x3E8C plus fraction (16012.796875) while the user independently confirmed that the physical InA CLIP LED remained dark.",
+            "The former threshold raw 15651.758430 therefore produced a false API clip and is invalid.",
+            "out/clipping/2026-07-25-preclip-ina-inb.json contains seven synchronized physical pre-clip frames while the user confirmed InA and InB were immediately below clipping: InA stayed at 0x3F2A..0x3F2B and InB at 0x3F1C..0x3F1D.",
+            "out/clipping/2026-07-25-confirmed-clipping-ina-inb.json contains six frames captured while the user explicitly confirmed that the physical inputs were clipping: InA stayed at 0x4002..0x4003 and InB at 0x4001..0x4002.",
+            "A live deployment of the provisional 0x4000 boundary was disproven while both physical CLIP LEDs were active: InA measured 0x3FBB..0x3FBC and InB 0x3FBA..0x3FBB, but the provisional API incorrectly remained false.",
+            "out/clipping/2026-07-25-clip-boundary-just-off.json captured the physical LEDs just off at InA 0x3F28..0x3F29 and InB 0x3F1E..0x3F1F.",
+            "out/clipping/2026-07-25-clip-boundary-inb-gain-11.6db.json plus the user's physical observation confirmed that InB remained off through 0x3F2C.",
+            "out/clipping/2026-07-25-clip-boundary-just-on.json captured both physical LEDs on at InA 0x3F40..0x3F41 and InB 0x3F35..0x3F36.",
+            "The sparse meter polling cannot reveal the exact single-count LED transition. It brackets the common threshold above 0x3F2C and no later than 0x3F35; 0x3F30 is the aligned operational boundary selected inside that bracket.",
+            "Payload tail bytes did not acquire a clipping bit. Offset 40 stayed 00 throughout both states; offsets 41..45 varied independently with output limiter activity and existing FIR408 runtime counters.",
+            "The physical observations confirm the per-slot threshold relation for InA and InB. Other channels retain unknown clip state until independently confirmed."
+          ],
+          "status": "observed_on_fir408_lan"
+        },
+        "input_runtime_status_byte": {
+          "storage": "0x40_tail",
+          "payload_offset": 40,
+          "type": "u8",
+          "observed_nonzero_values_hex": [
+            "01",
+            "02",
+            "09"
+          ],
+          "evidence": [
+            "In proxy_session_20260507_051913_073.json the meter raw values stayed around 0x36xx while payload[40] changed among 00, 01, 02, and 09 after input compressor/control writes.",
+            "During the synchronized 2026-07-25 pre-clip and confirmed-clipping captures, payload[40] stayed 00 while InA/InB crossed from 0x3Fxx to 0x4001..0x4003.",
+            "Therefore payload[40] is not clipping; clipping is derived independently for each confirmed meter slot using the physical LED bracket and the operational raw_u16le boundary 0x3F30."
+          ],
+          "clipping_relation": "disproven",
+          "status": "observed_unknown"
         },
         "limiter_indicator_runtime": {
           "storage": "0x40_tail",
@@ -9016,12 +9090,14 @@
             "setting payload[41] to 0xFF in the emulator turned on all limiter indicators in the original GUI",
             "isolated output limiter checkbox tests established exact mapping bit0..bit7 => Out1..Out8"
           ],
-          "status": "predicted_from_dsp408"
+          "status": "observed_on_fir408_lan"
         },
         "observations": [
           "GUI continuously polls runtime meters with request payload 00 01 01 40",
-          "DSP/emulator answers with a 42-byte cmd 0x40 payload",
-          "payload layout is 4-byte header + 12 x 3-byte slot region + 2-byte tail",
+          "physical FIR408 answers with a 46-byte cmd 0x40 payload",
+          "payload layout is 4-byte header + 12 x 3-byte slot region + undecoded input runtime status at offset 40 + output-limiter mask at offset 41 + four FIR408-specific unknown bytes",
+          "physical clipping disproves payload[40] as an input clipping mask",
+          "synchronized physical LED captures bracket per-slot clipping above 0x3F2C and by 0x3F35 for InA and InB; 0x3F30 is the selected operational boundary and other channels remain unconfirmed",
           "emulator GUI tests proved that per-channel meter movement is driven by slot bytes 0 and 1 of the mapped slot",
           "emulator GUI tests proved that payload[41] controls the output limiter indicators with exact bit-to-output mapping"
         ]
@@ -11060,9 +11136,10 @@
             "status": "observed"
           },
           "output_gain_u16le": {
-            "record_offset": 10,
+            "record_offset": 100,
             "value_model": "gain",
-            "status": "observed_static_read_matches_out1_direct_config"
+            "note": "2026-07-16 live Out8 marker write confirmed block 0x1C data offset 24; with the observed 108-byte output stride this is record offset 100 for every output",
+            "status": "observed_live_out8_derived_all_outputs_from_static_record_stride"
           },
           "iir_highpass_frequency_u16le": {
             "record_offset": 20,

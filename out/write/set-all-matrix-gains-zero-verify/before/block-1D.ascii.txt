@@ -1,0 +1,1 @@
+..4$...........InAFile.InBFile.InCFile.InDFile.Out1File

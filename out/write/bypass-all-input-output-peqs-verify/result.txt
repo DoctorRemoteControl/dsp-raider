@@ -1,0 +1,1 @@
+PASS: all 104 PEQs are bypassed (4 inputs x 8 bands, 8 outputs x 9 bands); all stored PEQ parameters and all bytes outside the bypass masks are unchanged.

@@ -1,0 +1,1 @@
+PASS: all 32 matrix gains read back as 0.0 dB (raw 280); all 8 routing masks unchanged.

@@ -1542,7 +1542,7 @@ final class ScriptFunctions {
                     + " | " + u16(memory, base + 102)
                     + " | " + formatMs(u16(memory, base + 104) / 96.0)
                     + " | route=0x" + String.format("%02X", u8(memory, base + 8))
-                    + " gains=" + u16(memory, base + 10) + "/" + u16(memory, base + 12) + "/" + u16(memory, base + 14) + "/" + u16(memory, base + 16)
+                    + " " + matrixGainSummary(memory, base)
                     + " | " + firSummary(memory, base)
                     + " | " + peqSummary(memory, base + 36)
                     + " |");
@@ -1555,6 +1555,16 @@ final class ScriptFunctions {
         lines.add("- Mute bytes are not decoded here yet; previous mask guesses were intentionally removed.");
         lines.add("- Compressor/Limiter extended fields are intentionally excluded from the first DSPD safe ping pass.");
         return String.join(System.lineSeparator(), lines);
+    }
+
+    private static String matrixGainSummary(byte[] memory, int outputBase) {
+        String[] inputs = {"InA", "InB", "InC", "InD"};
+        List<String> gains = new ArrayList<>();
+        for (int input = 0; input < inputs.length; input++) {
+            int raw = u16(memory, outputBase + 10 + (input * 2));
+            gains.add(inputs[input] + "=" + formatDb(gainDb(raw)) + "(raw=" + raw + ")");
+        }
+        return "gains=" + String.join(" ", gains);
     }
 
     private String fir408Cmd56ReadonlySweep(String dirText,

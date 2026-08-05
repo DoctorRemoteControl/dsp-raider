@@ -268,6 +268,10 @@ let after = readSaveConfig("out/fir/after", 0x00, 0x1F);
 saveDiffReport("out/fir/before-after-diff.md", assembledData(before), assembledData(after));
 ```
 
+`decodeFir408Config` renders every matrix crosspoint as decoded dB plus its
+raw u16 value. `script-example/413-read-current-matrix-gains-readonly.dspd`
+provides a read-only live capture for all 32 gains.
+
 `fir408SafePings` sends current-value writes only. It intentionally skips mute,
 IIR crossover remembered-state writes, compressor, and limiter fields.
 

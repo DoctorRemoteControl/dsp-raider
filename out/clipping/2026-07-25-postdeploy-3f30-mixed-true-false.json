@@ -1,0 +1,829 @@
+{
+  "schema": "fir408-runtime-meter-capture-v1",
+  "label": "deployed 0x3F30 mixed-state verification: InA unchanged, InB temporarily -1dB",
+  "apiBase": "http://192.168.1.146:8181/api/v1",
+  "startedAtEpochMs": 1785014787112,
+  "endedAtEpochMs": 1785014799159,
+  "durationSeconds": 12.046,
+  "pollIntervalMs": 100,
+  "uniqueSamples": 6,
+  "errors": [],
+  "samples": [
+    {
+      "capturedAtEpochMs": 1785014787126,
+      "observedAtEpochMs": 1785014779201,
+      "rawPayloadHex": "01 00 2B 40 1B 3F BE 09 3F 64 AD 05 C7 AD 05 C5 E0 3B 2A 1B 40 58 AD 05 C3 50 3C A3 2A 38 5B AD 05 B1 AD 05 B9 AD 05 AC 00 08 18 0A 00 00",
+      "statusByteRaw": 0,
+      "tailBytesRaw": [
+        0,
+        8,
+        24,
+        10,
+        0,
+        0
+      ],
+      "channels": [
+        {
+          "id": "ina",
+          "rawLowByte": 27,
+          "rawHighByte": 63,
+          "rawValue": 16155,
+          "aux": 190,
+          "levelDb": 35.79,
+          "limiterActive": null,
+          "clipActive": false
+        },
+        {
+          "id": "inb",
+          "rawLowByte": 9,
+          "rawHighByte": 63,
+          "rawValue": 16137,
+          "aux": 100,
+          "levelDb": 34.92,
+          "limiterActive": null,
+          "clipActive": false
+        },
+        {
+          "id": "inc",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 199,
+          "levelDb": -60.0,
+          "limiterActive": null,
+          "clipActive": null
+        },
+        {
+          "id": "ind",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 197,
+          "levelDb": -60.0,
+          "limiterActive": null,
+          "clipActive": null
+        },
+        {
+          "id": "out1",
+          "rawLowByte": 224,
+          "rawHighByte": 59,
+          "rawValue": 15328,
+          "aux": 42,
+          "levelDb": -3.27,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out2",
+          "rawLowByte": 27,
+          "rawHighByte": 64,
+          "rawValue": 16411,
+          "aux": 88,
+          "levelDb": 47.85,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out3",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 195,
+          "levelDb": -60.0,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out4",
+          "rawLowByte": 80,
+          "rawHighByte": 60,
+          "rawValue": 15440,
+          "aux": 163,
+          "levelDb": 2.03,
+          "limiterActive": true,
+          "clipActive": null
+        },
+        {
+          "id": "out5",
+          "rawLowByte": 42,
+          "rawHighByte": 56,
+          "rawValue": 14378,
+          "aux": 91,
+          "levelDb": -48.11,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out6",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 177,
+          "levelDb": -60.0,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out7",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 185,
+          "levelDb": -60.0,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out8",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 172,
+          "levelDb": -60.0,
+          "limiterActive": false,
+          "clipActive": null
+        }
+      ]
+    },
+    {
+      "capturedAtEpochMs": 1785014788338,
+      "observedAtEpochMs": 1785014789398,
+      "rawPayloadHex": "01 00 2B 40 1B 3F 74 01 3F 76 AD 05 C7 AD 05 C5 DF 3B 47 1A 40 BB AD 05 C3 50 3C 32 38 38 40 AD 05 B1 AD 05 B9 AD 05 AC 00 08 18 0A 00 00",
+      "statusByteRaw": 0,
+      "tailBytesRaw": [
+        0,
+        8,
+        24,
+        10,
+        0,
+        0
+      ],
+      "channels": [
+        {
+          "id": "ina",
+          "rawLowByte": 27,
+          "rawHighByte": 63,
+          "rawValue": 16155,
+          "aux": 116,
+          "levelDb": 35.77,
+          "limiterActive": null,
+          "clipActive": false
+        },
+        {
+          "id": "inb",
+          "rawLowByte": 1,
+          "rawHighByte": 63,
+          "rawValue": 16129,
+          "aux": 118,
+          "levelDb": 34.55,
+          "limiterActive": null,
+          "clipActive": false
+        },
+        {
+          "id": "inc",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 199,
+          "levelDb": -60.0,
+          "limiterActive": null,
+          "clipActive": null
+        },
+        {
+          "id": "ind",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 197,
+          "levelDb": -60.0,
+          "limiterActive": null,
+          "clipActive": null
+        },
+        {
+          "id": "out1",
+          "rawLowByte": 223,
+          "rawHighByte": 59,
+          "rawValue": 15327,
+          "aux": 71,
+          "levelDb": -3.32,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out2",
+          "rawLowByte": 26,
+          "rawHighByte": 64,
+          "rawValue": 16410,
+          "aux": 187,
+          "levelDb": 47.82,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out3",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 195,
+          "levelDb": -60.0,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out4",
+          "rawLowByte": 80,
+          "rawHighByte": 60,
+          "rawValue": 15440,
+          "aux": 50,
+          "levelDb": 2.01,
+          "limiterActive": true,
+          "clipActive": null
+        },
+        {
+          "id": "out5",
+          "rawLowByte": 56,
+          "rawHighByte": 56,
+          "rawValue": 14392,
+          "aux": 64,
+          "levelDb": -47.45,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out6",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 177,
+          "levelDb": -60.0,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out7",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 185,
+          "levelDb": -60.0,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out8",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 172,
+          "levelDb": -60.0,
+          "limiterActive": false,
+          "clipActive": null
+        }
+      ]
+    },
+    {
+      "capturedAtEpochMs": 1785014790741,
+      "observedAtEpochMs": 1785014791805,
+      "rawPayloadHex": "01 00 2B 40 1B 3F 8A 02 3F 3A AD 05 C7 AD 05 C5 DF 3B 34 1A 40 AE AD 05 C3 50 3C 14 31 38 84 AD 05 B1 AD 05 B9 AD 05 AC 00 08 1A 0A 00 00",
+      "statusByteRaw": 0,
+      "tailBytesRaw": [
+        0,
+        8,
+        26,
+        10,
+        0,
+        0
+      ],
+      "channels": [
+        {
+          "id": "ina",
+          "rawLowByte": 27,
+          "rawHighByte": 63,
+          "rawValue": 16155,
+          "aux": 138,
+          "levelDb": 35.78,
+          "limiterActive": null,
+          "clipActive": false
+        },
+        {
+          "id": "inb",
+          "rawLowByte": 2,
+          "rawHighByte": 63,
+          "rawValue": 16130,
+          "aux": 58,
+          "levelDb": 34.58,
+          "limiterActive": null,
+          "clipActive": false
+        },
+        {
+          "id": "inc",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 199,
+          "levelDb": -60.0,
+          "limiterActive": null,
+          "clipActive": null
+        },
+        {
+          "id": "ind",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 197,
+          "levelDb": -60.0,
+          "limiterActive": null,
+          "clipActive": null
+        },
+        {
+          "id": "out1",
+          "rawLowByte": 223,
+          "rawHighByte": 59,
+          "rawValue": 15327,
+          "aux": 52,
+          "levelDb": -3.32,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out2",
+          "rawLowByte": 26,
+          "rawHighByte": 64,
+          "rawValue": 16410,
+          "aux": 174,
+          "levelDb": 47.82,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out3",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 195,
+          "levelDb": -60.0,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out4",
+          "rawLowByte": 80,
+          "rawHighByte": 60,
+          "rawValue": 15440,
+          "aux": 20,
+          "levelDb": 2.01,
+          "limiterActive": true,
+          "clipActive": null
+        },
+        {
+          "id": "out5",
+          "rawLowByte": 49,
+          "rawHighByte": 56,
+          "rawValue": 14385,
+          "aux": 132,
+          "levelDb": -47.77,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out6",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 177,
+          "levelDb": -60.0,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out7",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 185,
+          "levelDb": -60.0,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out8",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 172,
+          "levelDb": -60.0,
+          "limiterActive": false,
+          "clipActive": null
+        }
+      ]
+    },
+    {
+      "capturedAtEpochMs": 1785014793147,
+      "observedAtEpochMs": 1785014794201,
+      "rawPayloadHex": "01 00 2B 40 1C 3F 4F 02 3F 2D AD 05 C7 AD 05 C5 DF 3B 4B 1A 40 BD AD 05 C3 50 3C 2D 3C 38 1E AD 05 B1 AD 05 B9 AD 05 AC 00 08 17 0A 00 00",
+      "statusByteRaw": 0,
+      "tailBytesRaw": [
+        0,
+        8,
+        23,
+        10,
+        0,
+        0
+      ],
+      "channels": [
+        {
+          "id": "ina",
+          "rawLowByte": 28,
+          "rawHighByte": 63,
+          "rawValue": 16156,
+          "aux": 79,
+          "levelDb": 35.82,
+          "limiterActive": null,
+          "clipActive": false
+        },
+        {
+          "id": "inb",
+          "rawLowByte": 2,
+          "rawHighByte": 63,
+          "rawValue": 16130,
+          "aux": 45,
+          "levelDb": 34.58,
+          "limiterActive": null,
+          "clipActive": false
+        },
+        {
+          "id": "inc",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 199,
+          "levelDb": -60.0,
+          "limiterActive": null,
+          "clipActive": null
+        },
+        {
+          "id": "ind",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 197,
+          "levelDb": -60.0,
+          "limiterActive": null,
+          "clipActive": null
+        },
+        {
+          "id": "out1",
+          "rawLowByte": 223,
+          "rawHighByte": 59,
+          "rawValue": 15327,
+          "aux": 75,
+          "levelDb": -3.32,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out2",
+          "rawLowByte": 26,
+          "rawHighByte": 64,
+          "rawValue": 16410,
+          "aux": 189,
+          "levelDb": 47.82,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out3",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 195,
+          "levelDb": -60.0,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out4",
+          "rawLowByte": 80,
+          "rawHighByte": 60,
+          "rawValue": 15440,
+          "aux": 45,
+          "levelDb": 2.01,
+          "limiterActive": true,
+          "clipActive": null
+        },
+        {
+          "id": "out5",
+          "rawLowByte": 60,
+          "rawHighByte": 56,
+          "rawValue": 14396,
+          "aux": 30,
+          "levelDb": -47.27,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out6",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 177,
+          "levelDb": -60.0,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out7",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 185,
+          "levelDb": -60.0,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out8",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 172,
+          "levelDb": -60.0,
+          "limiterActive": false,
+          "clipActive": null
+        }
+      ]
+    },
+    {
+      "capturedAtEpochMs": 1785014797411,
+      "observedAtEpochMs": 1785014798400,
+      "rawPayloadHex": "01 00 2B 40 1B 3F AD 01 3F A6 AD 05 C7 AD 05 C5 DF 3B 82 1A 40 E3 AD 05 C3 50 3C 61 25 38 72 AD 05 B1 AD 05 B9 AD 05 AC 00 08 19 0A 00 00",
+      "statusByteRaw": 0,
+      "tailBytesRaw": [
+        0,
+        8,
+        25,
+        10,
+        0,
+        0
+      ],
+      "channels": [
+        {
+          "id": "ina",
+          "rawLowByte": 27,
+          "rawHighByte": 63,
+          "rawValue": 16155,
+          "aux": 173,
+          "levelDb": 35.79,
+          "limiterActive": null,
+          "clipActive": false
+        },
+        {
+          "id": "inb",
+          "rawLowByte": 1,
+          "rawHighByte": 63,
+          "rawValue": 16129,
+          "aux": 166,
+          "levelDb": 34.56,
+          "limiterActive": null,
+          "clipActive": false
+        },
+        {
+          "id": "inc",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 199,
+          "levelDb": -60.0,
+          "limiterActive": null,
+          "clipActive": null
+        },
+        {
+          "id": "ind",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 197,
+          "levelDb": -60.0,
+          "limiterActive": null,
+          "clipActive": null
+        },
+        {
+          "id": "out1",
+          "rawLowByte": 223,
+          "rawHighByte": 59,
+          "rawValue": 15327,
+          "aux": 130,
+          "levelDb": -3.3,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out2",
+          "rawLowByte": 26,
+          "rawHighByte": 64,
+          "rawValue": 16410,
+          "aux": 227,
+          "levelDb": 47.83,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out3",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 195,
+          "levelDb": -60.0,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out4",
+          "rawLowByte": 80,
+          "rawHighByte": 60,
+          "rawValue": 15440,
+          "aux": 97,
+          "levelDb": 2.02,
+          "limiterActive": true,
+          "clipActive": null
+        },
+        {
+          "id": "out5",
+          "rawLowByte": 37,
+          "rawHighByte": 56,
+          "rawValue": 14373,
+          "aux": 114,
+          "levelDb": -48.34,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out6",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 177,
+          "levelDb": -60.0,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out7",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 185,
+          "levelDb": -60.0,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out8",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 172,
+          "levelDb": -60.0,
+          "limiterActive": false,
+          "clipActive": null
+        }
+      ]
+    },
+    {
+      "capturedAtEpochMs": 1785014798613,
+      "observedAtEpochMs": 1785014799606,
+      "rawPayloadHex": "01 00 2B 40 1B 3F B1 01 3F A9 AD 05 C7 AD 05 C5 DF 3B 93 1A 40 EF AD 05 C3 50 3C 73 26 38 82 AD 05 B1 AD 05 B9 AD 05 AC 00 08 19 0A 00 00",
+      "statusByteRaw": 0,
+      "tailBytesRaw": [
+        0,
+        8,
+        25,
+        10,
+        0,
+        0
+      ],
+      "channels": [
+        {
+          "id": "ina",
+          "rawLowByte": 27,
+          "rawHighByte": 63,
+          "rawValue": 16155,
+          "aux": 177,
+          "levelDb": 35.79,
+          "limiterActive": null,
+          "clipActive": false
+        },
+        {
+          "id": "inb",
+          "rawLowByte": 1,
+          "rawHighByte": 63,
+          "rawValue": 16129,
+          "aux": 169,
+          "levelDb": 34.56,
+          "limiterActive": null,
+          "clipActive": false
+        },
+        {
+          "id": "inc",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 199,
+          "levelDb": -60.0,
+          "limiterActive": null,
+          "clipActive": null
+        },
+        {
+          "id": "ind",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 197,
+          "levelDb": -60.0,
+          "limiterActive": null,
+          "clipActive": null
+        },
+        {
+          "id": "out1",
+          "rawLowByte": 223,
+          "rawHighByte": 59,
+          "rawValue": 15327,
+          "aux": 147,
+          "levelDb": -3.3,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out2",
+          "rawLowByte": 26,
+          "rawHighByte": 64,
+          "rawValue": 16410,
+          "aux": 239,
+          "levelDb": 47.83,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out3",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 195,
+          "levelDb": -60.0,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out4",
+          "rawLowByte": 80,
+          "rawHighByte": 60,
+          "rawValue": 15440,
+          "aux": 115,
+          "levelDb": 2.03,
+          "limiterActive": true,
+          "clipActive": null
+        },
+        {
+          "id": "out5",
+          "rawLowByte": 38,
+          "rawHighByte": 56,
+          "rawValue": 14374,
+          "aux": 130,
+          "levelDb": -48.29,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out6",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 177,
+          "levelDb": -60.0,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out7",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 185,
+          "levelDb": -60.0,
+          "limiterActive": false,
+          "clipActive": null
+        },
+        {
+          "id": "out8",
+          "rawLowByte": 173,
+          "rawHighByte": 5,
+          "rawValue": 1453,
+          "aux": 172,
+          "levelDb": -60.0,
+          "limiterActive": false,
+          "clipActive": null
+        }
+      ]
+    }
+  ]
+}

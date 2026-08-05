@@ -1,0 +1,15 @@
+# Read and decode the current FIR408 matrix without changing any DSP parameter.
+
+let tag = "current-matrix-gains-readonly";
+let base = "out/read-decode/${tag}";
+
+connect();
+resetSession();
+ensureSession();
+handshake();
+
+let current = readSaveConfig("${base}/current", 0x00, 0x1F);
+saveText("${base}/matrix-and-static-decode.md", decodeFir408Config(current));
+
+print("current-matrix-gains-readonly-done");
+print("saved=${base}/matrix-and-static-decode.md");

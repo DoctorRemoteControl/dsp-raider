@@ -1,0 +1,124 @@
+# Bypass every FIR408 PEQ band while preserving each band's current
+# gain, frequency, Q and filter type exactly as read from the DSP.
+
+let tag = "bypass-all-input-output-peqs-verify";
+let base = "out/write/${tag}";
+
+connect();
+resetSession();
+ensureSession();
+handshake();
+
+let before = readSaveConfig("${base}/before", 0x00, 0x1F);
+let beforeData = assembledData(before);
+
+# Inputs InA..InD: 8 PEQs each, six stored parameter bytes per band.
+let inAOffsets = split("80,86,92,98,104,110,116,122", ",");
+for (let band in 0..7) {
+    let params = hex(beforeData, at(inAOffsets, band), 6);
+    write("00 01 0A 33 00 0${band} ${params} 01");
+}
+let inBOffsets = split("218,224,230,236,242,248,254,260", ",");
+for (let band in 0..7) {
+    let params = hex(beforeData, at(inBOffsets, band), 6);
+    write("00 01 0A 33 01 0${band} ${params} 01");
+}
+let inCOffsets = split("356,362,368,374,380,386,392,398", ",");
+for (let band in 0..7) {
+    let params = hex(beforeData, at(inCOffsets, band), 6);
+    write("00 01 0A 33 02 0${band} ${params} 01");
+}
+let inDOffsets = split("494,500,506,512,518,524,530,536", ",");
+for (let band in 0..7) {
+    let params = hex(beforeData, at(inDOffsets, band), 6);
+    write("00 01 0A 33 03 0${band} ${params} 01");
+}
+
+# Outputs Out1..Out8: 9 PEQs each, six stored parameter bytes per band.
+let out1Offsets = split("604,610,616,622,628,634,640,646,652", ",");
+for (let band in 0..8) {
+    let params = hex(beforeData, at(out1Offsets, band), 6);
+    write("00 01 0A 33 04 0${band} ${params} 01");
+}
+let out2Offsets = split("712,718,724,730,736,742,748,754,760", ",");
+for (let band in 0..8) {
+    let params = hex(beforeData, at(out2Offsets, band), 6);
+    write("00 01 0A 33 05 0${band} ${params} 01");
+}
+let out3Offsets = split("820,826,832,838,844,850,856,862,868", ",");
+for (let band in 0..8) {
+    let params = hex(beforeData, at(out3Offsets, band), 6);
+    write("00 01 0A 33 06 0${band} ${params} 01");
+}
+let out4Offsets = split("928,934,940,946,952,958,964,970,976", ",");
+for (let band in 0..8) {
+    let params = hex(beforeData, at(out4Offsets, band), 6);
+    write("00 01 0A 33 07 0${band} ${params} 01");
+}
+let out5Offsets = split("1036,1042,1048,1054,1060,1066,1072,1078,1084", ",");
+for (let band in 0..8) {
+    let params = hex(beforeData, at(out5Offsets, band), 6);
+    write("00 01 0A 33 08 0${band} ${params} 01");
+}
+let out6Offsets = split("1144,1150,1156,1162,1168,1174,1180,1186,1192", ",");
+for (let band in 0..8) {
+    let params = hex(beforeData, at(out6Offsets, band), 6);
+    write("00 01 0A 33 09 0${band} ${params} 01");
+}
+let out7Offsets = split("1252,1258,1264,1270,1276,1282,1288,1294,1300", ",");
+for (let band in 0..8) {
+    let params = hex(beforeData, at(out7Offsets, band), 6);
+    write("00 01 0A 33 0A 0${band} ${params} 01");
+}
+let out8Offsets = split("1360,1366,1372,1378,1384,1390,1396,1402,1408", ",");
+for (let band in 0..8) {
+    let params = hex(beforeData, at(out8Offsets, band), 6);
+    write("00 01 0A 33 0B 0${band} ${params} 01");
+}
+
+sleep(700);
+
+let after = readSaveConfig("${base}/after", 0x00, 0x1F);
+let afterData = assembledData(after);
+
+# Verify all four input PEQ masks: PEQ1..PEQ8 = bits 0..7.
+assert u8(afterData, 1436) == 0xFF;
+assert u8(afterData, 1438) == 0xFF;
+assert u8(afterData, 1440) == 0xFF;
+assert u8(afterData, 1442) == 0xFF;
+
+# Verify every output: low mask PEQ1..PEQ8 = 0xFF, high mask PEQ9 = 0x01.
+assert u8(afterData, 1444) == 0xFF;
+assert u8(afterData, 1445) == 0x01;
+assert u8(afterData, 1446) == 0xFF;
+assert u8(afterData, 1447) == 0x01;
+assert u8(afterData, 1448) == 0xFF;
+assert u8(afterData, 1449) == 0x01;
+assert u8(afterData, 1450) == 0xFF;
+assert u8(afterData, 1451) == 0x01;
+assert u8(afterData, 1452) == 0xFF;
+assert u8(afterData, 1453) == 0x01;
+assert u8(afterData, 1454) == 0xFF;
+assert u8(afterData, 1455) == 0x01;
+assert u8(afterData, 1456) == 0xFF;
+assert u8(afterData, 1457) == 0x01;
+assert u8(afterData, 1458) == 0xFF;
+assert u8(afterData, 1459) == 0x01;
+
+# The interleaved bytes beside the four input masks and everything outside
+# the bypass-mask region must remain unchanged.
+assert u8(afterData, 1437) == u8(beforeData, 1437);
+assert u8(afterData, 1439) == u8(beforeData, 1439);
+assert u8(afterData, 1441) == u8(beforeData, 1441);
+assert u8(afterData, 1443) == u8(beforeData, 1443);
+assert slice(afterData, 0, 1436) == slice(beforeData, 0, 1436);
+assert slice(afterData, 1460, 96) == slice(beforeData, 1460, 96);
+
+saveDiffReport("${base}/before-after-config-diff.md", beforeData, afterData);
+saveText("${base}/after-static-decode.md", decodeFir408Config(after));
+saveText("${base}/result.txt",
+    "PASS: all 104 PEQs are bypassed (4 inputs x 8 bands, 8 outputs x 9 bands); all stored PEQ parameters and all bytes outside the bypass masks are unchanged.\n"
+);
+
+print("bypass-all-input-output-peqs-verified");
+print("saved=${base}/result.txt");

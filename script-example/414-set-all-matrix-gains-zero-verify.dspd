@@ -1,0 +1,103 @@
+# Set every FIR408 matrix crosspoint gain to 0.0 dB (raw 280).
+# Matrix routing masks are read before the writes and verified unchanged afterwards.
+
+let tag = "set-all-matrix-gains-zero-verify";
+let base = "out/write/${tag}";
+
+connect();
+resetSession();
+ensureSession();
+handshake();
+
+let before = readSaveConfig("${base}/before", 0x00, 0x1F);
+let beforeData = assembledData(before);
+
+# Command 0x41: <output channel 0x04..0x0B> <input 0..3> <gain raw LE>.
+# 0.0 dB is raw 280 = 0x0118 = bytes 18 01.
+write("00 01 05 41 04 00 18 01");
+write("00 01 05 41 04 01 18 01");
+write("00 01 05 41 04 02 18 01");
+write("00 01 05 41 04 03 18 01");
+write("00 01 05 41 05 00 18 01");
+write("00 01 05 41 05 01 18 01");
+write("00 01 05 41 05 02 18 01");
+write("00 01 05 41 05 03 18 01");
+write("00 01 05 41 06 00 18 01");
+write("00 01 05 41 06 01 18 01");
+write("00 01 05 41 06 02 18 01");
+write("00 01 05 41 06 03 18 01");
+write("00 01 05 41 07 00 18 01");
+write("00 01 05 41 07 01 18 01");
+write("00 01 05 41 07 02 18 01");
+write("00 01 05 41 07 03 18 01");
+write("00 01 05 41 08 00 18 01");
+write("00 01 05 41 08 01 18 01");
+write("00 01 05 41 08 02 18 01");
+write("00 01 05 41 08 03 18 01");
+write("00 01 05 41 09 00 18 01");
+write("00 01 05 41 09 01 18 01");
+write("00 01 05 41 09 02 18 01");
+write("00 01 05 41 09 03 18 01");
+write("00 01 05 41 0A 00 18 01");
+write("00 01 05 41 0A 01 18 01");
+write("00 01 05 41 0A 02 18 01");
+write("00 01 05 41 0A 03 18 01");
+write("00 01 05 41 0B 00 18 01");
+write("00 01 05 41 0B 01 18 01");
+write("00 01 05 41 0B 02 18 01");
+write("00 01 05 41 0B 03 18 01");
+sleep(500);
+
+let after = readSaveConfig("${base}/after", 0x00, 0x1F);
+let afterData = assembledData(after);
+
+# The eight route masks must be bit-for-bit unchanged.
+assert u8(afterData, 576) == u8(beforeData, 576);
+assert u8(afterData, 684) == u8(beforeData, 684);
+assert u8(afterData, 792) == u8(beforeData, 792);
+assert u8(afterData, 900) == u8(beforeData, 900);
+assert u8(afterData, 1008) == u8(beforeData, 1008);
+assert u8(afterData, 1116) == u8(beforeData, 1116);
+assert u8(afterData, 1224) == u8(beforeData, 1224);
+assert u8(afterData, 1332) == u8(beforeData, 1332);
+
+# Verify all 32 gain fields independently from the DSP readback.
+assert u16le(afterData, 578) == 280;
+assert u16le(afterData, 580) == 280;
+assert u16le(afterData, 582) == 280;
+assert u16le(afterData, 584) == 280;
+assert u16le(afterData, 686) == 280;
+assert u16le(afterData, 688) == 280;
+assert u16le(afterData, 690) == 280;
+assert u16le(afterData, 692) == 280;
+assert u16le(afterData, 794) == 280;
+assert u16le(afterData, 796) == 280;
+assert u16le(afterData, 798) == 280;
+assert u16le(afterData, 800) == 280;
+assert u16le(afterData, 902) == 280;
+assert u16le(afterData, 904) == 280;
+assert u16le(afterData, 906) == 280;
+assert u16le(afterData, 908) == 280;
+assert u16le(afterData, 1010) == 280;
+assert u16le(afterData, 1012) == 280;
+assert u16le(afterData, 1014) == 280;
+assert u16le(afterData, 1016) == 280;
+assert u16le(afterData, 1118) == 280;
+assert u16le(afterData, 1120) == 280;
+assert u16le(afterData, 1122) == 280;
+assert u16le(afterData, 1124) == 280;
+assert u16le(afterData, 1226) == 280;
+assert u16le(afterData, 1228) == 280;
+assert u16le(afterData, 1230) == 280;
+assert u16le(afterData, 1232) == 280;
+assert u16le(afterData, 1334) == 280;
+assert u16le(afterData, 1336) == 280;
+assert u16le(afterData, 1338) == 280;
+assert u16le(afterData, 1340) == 280;
+
+saveDiffReport("${base}/before-after-config-diff.md", beforeData, afterData);
+saveText("${base}/verified-matrix-state.md", decodeFir408Config(after));
+saveText("${base}/result.txt", "PASS: all 32 matrix gains read back as 0.0 dB (raw 280); all 8 routing masks unchanged.\n");
+
+print("set-all-matrix-gains-zero-verified");
+print("saved=${base}/verified-matrix-state.md");
