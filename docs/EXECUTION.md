@@ -7,6 +7,10 @@ Run commands from `tracks-dsp-raider` after building. `check` validates without
 executing; `run` executes a checked script. `plan` prepares changes offline;
 `apply` explicitly writes a request against a saved baseline.
 
+The [live validation record](LIVE-VALIDATION.md) covers raw reads and one Out8
+gain change/restoration on FIR408 V0113P. Use `handshake()` after session setup
+before raw script reads; the common CLI `dump` performs this sequence itself.
+
 ## Run a checked DSPD script
 
 These supplied scripts need no device connection:

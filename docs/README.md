@@ -24,6 +24,9 @@ syntax.
 
 ## Scope
 
+The [live validation record](LIVE-VALIDATION.md) documents checked raw reads and
+one verified Out8 gain change/restoration on FIR408 V0113P.
+
 `check`, `decode`, `diff` and `plan` work offline. `capture` only receives stream
 data. `connect`, `identify` and `dump` use a proxy device session. `run` compiles
 the whole script before executing it; effects depend on its functions. Explicit
