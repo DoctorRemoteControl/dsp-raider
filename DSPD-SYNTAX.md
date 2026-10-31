@@ -1,6 +1,34 @@
-# DSP408 Script Syntax
+# DSPD Script Syntax
+
+[Documentation](docs/README.md) · [CLI](docs/CLI.md) · [Compiler/check](docs/DSPD-CHECK.md)
 
 This file describes the current `.dspd` DSL used in `tracks-dsp-raider`.
+Commands in this guide assume that project as the working directory.
+
+For the source-aware compiler front-end and whole-script offline validation, see
+[DSPD check](docs/DSPD-CHECK.md):
+
+```bash
+java -jar target/dsp-raider.jar check --in examples/offline-check.dspd
+```
+
+Checking does not execute the script. The common CLI executes a checked AST
+with `run --in script.dspd`: the complete source is compiled before a runtime
+is constructed. Start with the offline examples:
+
+```bash
+java -jar target/dsp-raider.jar run --in examples/offline-run.dspd
+java -jar target/dsp-raider.jar run --in examples/offline-parameters.dspd
+```
+
+The existing interpreter remains available as `target/tracks-dsp-script-all.jar`;
+its `--file` option executes a script without automatically invoking the new
+compiler. Examples below can access the network and write files. The four new
+parameter functions are supported by the checked executor. Explicit CLI `apply`
+and checked DSPD `applyChanges` use the shared application service; raw `write`
+retains its own active behavior. See [Execution](docs/EXECUTION.md). There is no
+`compile` subcommand or general bytecode compiler. Do not use
+`examples/offline-check.dspd` for offline execution: it contains `connect`.
 
 The language is designed for:
 
@@ -112,12 +140,19 @@ print(blocks.count);
 print(blocks.dataLen);
 ```
 
-For a full DSP408/FIR408 config dump plus files:
+For a full FIR408 config dump plus files:
 
 ```txt
 let blocks = readSaveConfig("out/fir/current", 0x00, 0x1F);
 print(blocks);
 ```
+
+The DSP408 configuration range ends at `0x1C`; FIR408 ends at `0x1F`.
+These raw DSPD functions do not select a model automatically. Range helpers
+accept ordered byte indices `0..255`; a single `readBlock` retains the legacy
+integer-to-wire-byte conversion. The static checker does not apply a device's
+configuration-memory boundary to raw experiments. For a profile-aware read,
+use the common CLI's [`dump`](docs/CLI.md#read-the-device-and-record-the-stream).
 
 ### Write
 
@@ -147,6 +182,55 @@ saveDiffReport("out/diff.txt", before, after);
 saveCaptureReadBlocks(cap, "out/capture-blocks");
 saveReadBlocks(blocks, "out/config-blocks");
 ```
+
+---
+
+## Parameters and explicit application
+
+These functions are available through common CLI `run` and
+`CheckedDspScriptEngine`. Their camelCase and kebab-case forms are aliases;
+the original separate interpreter does not implement these operations.
+
+| Function | Return value | Effects |
+| --- | --- | --- |
+| `loadSnapshot(path)` / `load-snapshot` | validated saved `Snapshot` | reads the named file; no device connection |
+| `parameter(snapshot, channel, kind)` | `ParameterValue` with evidence status | pure inspection of saved data |
+| `planChange(snapshot, channel, kind, value)` / `plan-change` | `ChangePlan.Entry` | pure planning; no transmission |
+| `applyChanges(snapshot, changesPath)` / `apply-changes` | `ApplyResult` on success | reads a request file and actively applies through an existing connection |
+
+Channels are InA–InD and Out1–Out8; kinds are `gain`, `mute` and `delay`,
+case-insensitive. Gain uses dB, delay ms, mute numeric 0/1 or boolean false/true.
+Known constant channel/kind/range errors are checked before execution. Dynamic
+values and actual snapshot contents are validated at runtime. `parameter`
+requires a documented firmware profile. Unconfirmed readings keep null `value`
+with their status and any candidate `raw`; `planChange` produces no payload for
+UNCHANGED or BLOCKED entries.
+
+```dspd
+let snapshot = loadSnapshot("src/test/resources/live/fir408-v0113p-20261031.json");
+let gain = parameter(snapshot, "Out2", "gain");
+assert(gain.status == "CONFIRMED");
+print("${gain.channel}: ${gain.value} ${gain.unit}");
+
+let mute = parameter(snapshot, "InA", "mute");
+assert(mute.status == "INFERRED");
+assert(mute.value == null);
+
+let change = planChange(snapshot, "Out2", "gain", -3.04);
+assert(change.targetValue == -3);
+assert(change.rounded);
+print(change.payloadHex);
+```
+
+The active `applyChanges` operation requires `connect()` first and reads the
+same request schema as CLI `plan`/`apply`. It checks fresh firmware and all
+requested baseline values, then DSP ACK and full-snapshot readback for each
+write. An application failure stops the script and retains a partial report in
+the underlying `ChangeApplicationException`; blocked preflight rejects the
+request before application. There is no retry or rollback. See
+[Execution](docs/EXECUTION.md#apply-from-a-checked-script) for an active example
+and result properties. Checking firmware/values does not verify a unique
+physical serial or make snapshots atomic against other writers.
 
 ---
 
@@ -182,6 +266,10 @@ Parameters:
 - optional `actionWindowMs`
 - optional `quietMs`
 - optional `maxWaitMs`
+
+Modern parenthesized GUI-capture calls accept 0..4 arguments, with at most
+three numeric timing arguments. The legacy form without parentheses retains
+its own 1..3 argument limit. This also applies to `guiActionCapture` below.
 
 ### `gui-action-capture / guiActionCapture`
 
@@ -357,6 +445,31 @@ All multibyte values are little endian.
 
 ## Return Types
 
+### `Snapshot`
+
+Returned by `loadSnapshot`. Properties: `deviceVersion`, `deviceProfile`.
+
+### `ParameterValue`
+
+Returned by `parameter`, plan entry `before`, or application entry `readback`.
+Properties: `status`, `value`, `raw`, `unit`, `channel`, `detail`. `status` is
+CONFIRMED, INFERRED, UNKNOWN or INVALID. Only CONFIRMED has a parameter `value`;
+other statuses retain null. For mute, `raw` is the entire stored mask byte.
+
+### `ChangePlan.Entry`
+
+Returned by `planChange`. Properties: `status`, `before`, `targetValue`,
+`requestedValue`, `rounded`, `payloadHex`, `reason`. `before` can be null if no
+firmware profile exists. `payloadHex` is empty for UNCHANGED/BLOCKED.
+
+### `ApplyResult`
+
+Returned by successful `applyChanges`. Properties: `ok`, `deviceVersion`,
+`entries`, `error`. Entry properties: `status`, `readback`, `writeAttempted`,
+`detail`. `readback` can be null. Application statuses are APPLIED, UNCHANGED,
+BLOCKED, FAILED and NOT_ATTEMPTED; failed application throws rather than returning
+normally. A failed attempted write may already have effects.
+
 ### `ProxyStatus`
 
 Properties:
@@ -483,6 +596,10 @@ print(diffReport(before, after));
 
 ## Quick Reference
 
+- `load-snapshot / loadSnapshot`
+- `parameter`
+- `plan-change / planChange`
+- `apply-changes / applyChanges`
 - `connect`
 - `disconnect`
 - `status`

@@ -1,975 +1,131 @@
-# tracks-dsp-raider
+# DSP Raider
 
-Build from the [DSP408 workspace](../README.md) with `mvn verify`, or first install
-`../dsp408-protocol` locally before building this repository alone. Newly built
-standalone JARs are written to `target/`. See [the architecture](../ARCHITECTURE.md)
-for the shared protocol library, injectable sessions and separated FIR analysis.
+Java tool for **t.racks DSP408 and FIR408**: read device state, investigate
+protocol traffic, compare saved snapshots, prepare changes, execute checked
+DSPD scripts and explicitly apply confirmed parameter changes.
 
-Java toolkit for accessing and reverse-engineering a DSP408 via a local proxy stack.
+## Quick start without a DSP
 
-## Common entry point
+Requirements: JDK 21 and Maven. Build in the shared
+[DSP408 workspace](../README.md):
 
-After `mvn verify`, the existing workflows are also available in one runnable JAR:
+```bash
+mvn -B -ntp verify
+```
+
+Then, from `tracks-dsp-raider`:
 
 ```bash
 java -jar target/dsp-raider.jar --help
-java -jar target/dsp-raider.jar connect
-java -jar target/dsp-raider.jar identify --out identity.json
-java -jar target/dsp-raider.jar dump --out snapshot.json
-java -jar target/dsp-raider.jar decode --in snapshot.json --out decoded.md
-java -jar target/dsp-raider.jar diff --before snapshot.json --after later.json
-java -jar target/dsp-raider.jar plan --in snapshot.json --changes examples/change-preview.json
-java -jar target/dsp-raider.jar capture --out frames.json --duration-ms 5000
-java -jar target/dsp-raider.jar decode --in frames.json --lib DspLib-408-fir.json
+java -jar target/dsp-raider.jar check --in examples/offline-run.dspd
+java -jar target/dsp-raider.jar run --in examples/offline-run.dspd
+java -jar target/dsp-raider.jar run --in examples/offline-parameters.dspd
+java -jar target/dsp-raider.jar decode --in src/test/resources/live/fir408-v0113p-20261031.json
+java -jar target/dsp-raider.jar plan \
+  --in src/test/resources/live/fir408-v0113p-20261031.json \
+  --changes examples/change-preview.json
 ```
 
-Online commands use the existing proxy at stream/control ports 19081/19082;
-`--stream-host`, `--stream-port`, `--control-host`, `--control-port` select other
-endpoints. Capture uses only the stream endpoint and sends no application data.
-Decode/diff/plan work offline. Output paths must be new files so references are never
-overwritten. A failed dump can retain partial diagnostic JSON with `ok: false`;
-that file is rejected as a successful snapshot by offline analysis.
-
-Gain, Mute and Delay now share a [version-specific parameter model](docs/PARAMETERS.md)
-for all 12 channels. Decode reports show evidence status and read positions;
-diff reports show engineering values before the complete raw comparison.
-Unknown bits, missing data and invalid raw values stay explicit. Confirmed
-parameter maps are available for DSP408 V0104 and FIR408 V0113P only.
-
-The [change preview](docs/CHANGE-PREVIEW.md) compares requested Gain/Mute/Delay
-values with a saved snapshot, reports quantization, unchanged and blocked fields,
-and shows prepared payloads for confirmed changes. It sends nothing and supports
-text (default) or `--format json` output. A blocked baseline never produces a
-payload, even if its write command is known.
-
-The new reader reuses an existing session and never resets it. FIR408 uses blocks
-00..1F; recognized DSP408 uses 00..1C. Unknown model strings need an explicit
-`--end-block` for reads. The detailed FIR408 V0113P memory report requires all
-blocks and valid wire checksums/indices. Other profiles receive a labelled raw
-block overview, plus parameter values when an exact catalog exists.
-Capture parameter-write interpretation uses the explicitly selected
-field library; without one, the report shows verified wire frames and ASCII.
-
-The real-device regression fixture was read from **FIR408 V0113P** on 2026-10-31:
-32 blocks, 1,556 data bytes, repeated without changes. Its provenance is next to
-the fixture under `src/test/resources/live/`. Full reference artifacts live in
-`/home/xla/drremote/Archiv/DSP408/read-reference-20261031-201033/`.
-Direct comparison with the Windows Editor V1.12 screen has not been performed;
-the Linux workspace has no Windows/Wine runtime. Firmware Updater V1.15 is a
-separate supplied artifact and was not executed.
-
-The project combines read, write, scripting, and GUI-capture tooling so that the DSP protocol can be analyzed in a structured way.  
-A key use case is **continuous AI-assisted decoding**: while the original GUI stays connected through the proxy, Codex can repeatedly observe GUI writes, read back DSP blocks, compare dumps, and refine protocol hypotheses in an ongoing decode loop.
-
-The project bundles multiple tools:
-
-- **Reader CLI**
-  - reads handshake, device/system info, and all known DSP blocks
-- **Writer CLI**
-  - sends payloads in a controlled way through the proxy to the DSP
-- **Raw Write Tool**
-  - sends raw payloads or full frames directly to a target device
-- **Script CLI**
-  - small DSL to automate read, write, dump, and GUI-capture flows
-- **GUI Capture**
-  - records which frames the original GUI sends via the proxy stream
-
----
-
-## Why this project exists
-
-The DSP408 protocol is not encoded symmetrically between GUI writes and block reads.
-
-That means:
-
-- a GUI action usually produces a **write command**
-- the resulting value is often stored somewhere else in the DSP **read blocks**
-- the read representation is often **not identical** to the write representation
-- therefore protocol decoding requires **write observation + readback comparison**
-
-This toolkit is designed exactly for that workflow.
-
----
-
-## Continuous AI Decode Loop in Codex
-
-One of the most useful workflows is to keep the **original DSP GUI connected through the proxy** and let an AI agent such as **Codex in Codex IDE** continuously drive the decode process.
-
-### Core idea
-
-The AI does not need a full protocol map up front.  
-It can iteratively discover fields by repeating this loop:
-
-1. observe which write frame the GUI sends
-2. perform or confirm a controlled GUI change
-3. read the DSP blocks again
-4. compare old vs new block dumps
-5. identify which bytes changed
-6. correlate:
-   - GUI action
-   - write command
-   - changed read-block offsets
-7. store the new hypothesis in documentation or a field library
-8. repeat
-
-### Why this works well
-
-Because the proxy exposes both sides:
-
-- **stream side**
-  - what the GUI writes / what the DSP answers
-- **control side**
-  - controlled scripted access for readback and testing
-
-This allows a continuous reverse-engineering loop where the AI can move forward step by step instead of requiring the full protocol in advance.
-
-### Typical AI-assisted decode cycle
-
-A practical cycle looks like this:
-
-1. original GUI is connected through the proxy
-2. AI arms GUI capture
-3. user changes exactly one setting in the GUI
-4. AI captures the last interesting write frame
-5. AI performs a new full dump or selected block reads
-6. AI diffs the new dump against the previous dump
-7. AI searches for changed offsets
-8. AI proposes mapping candidates
-9. AI documents confirmed findings
-10. AI repeats with the next value or next parameter
-
-### Important consequence
-
-To find read mappings, it is usually **not enough** to inspect the write payload alone.
-
-In many cases you must:
-
-- trigger a write
-- re-read DSP blocks
-- compare the before/after dumps
-- decode the changed read locations
-
-This is the main reason the project combines:
-
-- GUI write capture
-- automated re-dump
-- block diffing
-- scripting
-- repeatable AI workflows
-
----
-
-## Overview
-
-The project is split into several areas:
-
-- `de.drremote.dsp408.proxy`
-  - proxy connection, control/stream channel, session handling
-- `de.drremote.dsp408.dump`
-  - full DSP dump and helper functions for byte decoding
-- `de.drremote.dsp408.raw`
-  - direct raw access with payload or frame sending
-- `de.drremote.dsp408.script`
-  - scripting language, parser, runtime, GUI-capture helpers
-- `de.drremote.dsp408.tool`
-  - small public tool facade for read/write/script
-- `de.drremote.dsp408.model`
-  - response, status, capture, and frame models
-- `de.drremote.dsp408.util`
-  - hex, JSON, and wait helpers
-
----
-
-## Core Functions
-
-### 1. DSP Dump
-`DSP408ProxyDump` opens a proxy connection, prepares the session, and reads:
-
-- `handshake_init`
-- `device_info`
-- `system_info`
-- optional `login`
-- all blocks from `0x00` to `0x1C`
-
-The result is collected as a `DumpResult` and can be output as JSON.
-
-### 2. Proxy Client
-`ProxyClient` encapsulates:
-
-- stream connection
-- control connection
-- session reset
-- session initialization
-- handshake
-- login
-- block read
-- controlled sending of a payload with expected DSP response
-
-### 3. Raw Write
-`DspRawWriteTool` is intended for direct low-level tests.
-
-It can:
-
-- send raw payloads
-- send complete frames
-- optionally run handshake and login beforehand
-- display response frames including checksum, payload hex, and ASCII
-
-### 4. Script Engine
-The script engine allows small `.dspd` scripts for:
-
-- connect / disconnect
-- status checks
-- handshake / login
-- read blocks
-- send payloads
-- conditions with `if / else if / else`
-- loops with `for`
-- GUI capture
-- saving output to files
-- byte evaluation (`u8`, `u16le`, `u32le`, `ascii`, `hex`, `slice`)
-- event-based GUI action capture that ignores `0x40` background traffic
-- write-series helpers for fader decoding such as command/channel filtering and `u16` series extraction
-
-### 5. GUI Capture
-With `GuiSnifferClient` or `GuiCaptureDaemon`, frames streamed through the proxy can be captured to analyze actions from the original software.
-
-This is especially useful for AI-assisted reverse engineering, because the captured write frames can immediately be correlated with readback changes from fresh dumps.
-
----
-
-## Requirements
-
-To use proxy functions, the matching counterpart services must be running.
-
-Typical defaults:
-
-- **Stream Host:** `127.0.0.1`
-- **Stream Port:** `19081`
-- **Control Host:** `127.0.0.1`
-- **Control Port:** `19082`
-
-For GUI decode/capture workflows:
-
-- the original software should already be connected **through the proxy**
-- the project notes mention `127.0.0.1:9761` for this
-- while the GUI remains connected, scripts and AI tooling can continue capturing writes and performing readback analysis
-
-For raw access, default values are:
-
-- **Host:** `192.168.0.166`
-- **Port:** `9761`
-
-You can override these via the CLI.
-
----
-
-## Build Output
-
-The build produces three separate fat JARs in `target/`:
-
-- `target/tracks-dsp-reader-all.jar`
-- `target/tracks-dsp-writer-all.jar`
-- `target/tracks-dsp-script-all.jar`
-
-This keeps daily usage on Windows simple:
-
-```powershell
-java -jar target\tracks-dsp-reader-all.jar ...
-java -jar target\tracks-dsp-writer-all.jar ...
-java -jar target\tracks-dsp-script-all.jar ...
-```
-
-Build command:
-
-```powershell
-mvn -q -DskipTests package
-```
-
----
-
-## Key Classes
-
-## `ProxyClient`
-Central class for normal proxy operation.
-
-Important methods:
-
-- `connect()`
-- `status()`
-- `resetSession()`
-- `ensureSession()`
-- `handshakeInit()`
-- `deviceInfo()`
-- `systemInfo()`
-- `handshake()`
-- `login(pin)`
-- `readBlock(blockIndex)`
-- `sendPayload(payload, expectedCommand, strictResponse, label)`
-- `prepareSession(pin)`
-
----
-
-## `DSP408ProxyDump`
-Reads a full set of DSP data and returns a `DumpResult`.
-
-Flow:
-
-1. connect
-2. reset session
-3. ensure session
-4. read handshake
-5. optional login
-6. read all blocks
-7. produce JSON result
-
----
-
-## `DumpResult`
-Serializes a dump in JSON with:
-
-- `ok`
-- `summary`
-- `handshake`
-- `login`
-- `blocks`
-- optional `error`
-
-Example structure:
-
-```json
-{
-  "ok": true,
-  "summary": {
-    "handshake_ok": true,
-    "login_used": false,
-    "blocks_total": 29,
-    "blocks_bad_checksum": 0
-  },
-  "handshake": {
-    "init": { "...": "..." },
-    "device": { "...": "..." },
-    "system": { "...": "..." }
-  },
-  "login": null,
-  "blocks": [
-    { "...": "..." }
-  ]
-}
-````
-
----
-
-## `DspReadCli`
-
-CLI for full proxy-based DSP dumps.
-
-Supports:
-
-* `--stream-host <host>`
-* `--stream-port <port>`
-* `--control-host <host>`
-* `--control-port <port>`
-* `--pin <1234>`
-* `--out <path>`
-* `--verbose`
-
----
-
-## `DspWriteCli`
-
-CLI for controlled payload injection through the proxy.
-
-Supports:
-
-* `--payload <hex>`
-* `--stream-host <host>`
-* `--stream-port <port>`
-* `--control-host <host>`
-* `--control-port <port>`
-* `--pin <1234>`
-* `--expected-command <cmd>`
-* `--label <text>`
-* `--non-strict`
-* `--verbose`
-
----
-
-## `DspRawWriteTool`
-
-CLI for quick raw tests against the device.
-
-Supports:
-
-* `--payload <hex>`
-* `--frame <hex>`
-* `--handshake`
-* `--login <1234>`
-* `--responses <n>`
-* `--verbose`
-
----
-
-## `DspScriptEngine`
-
-Executes `.dspd` scripts.
-
-Supports, among others:
-
-* variables via `let`
-* control flow with `if`, `else if`, `else`, `for`
-* `assert`
-* `print`
-* `sleep`
-* `save-text`
-* connect / GUI-capture commands
-* function style and legacy style for expressions
-
----
-
-## CLI Usage
-
-## 1. Reader CLI
-
-Example:
+The reference dump contains real, preserved FIR408 V0113P data. The requested
+changes file is a simulated example. These commands open no device connection.
+For an individual build, install `../dsp408-protocol` locally first; see
+[Development](docs/DEVELOPMENT.md).
+
+## Which command should I use?
+
+| Command | Purpose | Device access |
+| --- | --- | --- |
+| `check` | Statically check a complete DSPD script | offline; no execution |
+| `run` | Compile completely, then execute the checked AST | depends on script; can read/write device or files |
+| `apply` | Explicitly apply a change request with fresh-state, ACK and readback checks | active through proxy |
+| `decode` | Analyze a snapshot or capture | offline |
+| `diff` | Compare two snapshots as parameters and raw bytes | offline |
+| `plan` | Prepare gain/mute/delay changes with rounding and evidence status | offline; no transmission |
+| `connect` | Check/establish readiness of the proxy's device session | through proxy |
+| `identify` | Read identity and system information | through proxy |
+| `dump` | Read the detected model's configuration | through proxy |
+| `capture` | Record a bounded section of the event stream | passive stream access only |
+
+All options, file formats and exit codes are documented in the
+[CLI reference](docs/CLI.md). Default read endpoints are `127.0.0.1:19081`
+(stream) and `127.0.0.1:19082` (control). The
+[proxy](../tracks-dsp-proxy/README.md#start-for-raider) must have both listeners
+enabled. Reading also works without the original Windows software.
+
+## Checking and running DSPD
 
 ```bash
-java -jar target\tracks-dsp-reader-all.jar --pin 1234 --out out\dump.json
+java -jar target/dsp-raider.jar check --in examples/offline-run.dspd --format json
 ```
 
-Options:
+`check` uses a lexer, parser, immutable syntax tree and conservative static
+analysis. Messages retain real lines and columns. `run --in script.dspd` uses
+that same compiler before executing the checked AST. Any compile error prevents
+all script functions, including connection, file writes and waits. Runtime errors
+retain source positions; script output goes to stdout. The new
+[parameter functions](DSPD-SYNTAX.md#parameters-and-explicit-application) read
+saved snapshots, inspect evidence and prepare or explicitly apply changes.
 
-* `--pin <1234>`
-* `--out <path>`
-* `--stream-host <host>`
-* `--stream-port <port>`
-* `--control-host <host>`
-* `--control-port <port>`
-* `--verbose`
-
----
-
-## 2. Writer CLI
-
-Example:
+The existing runner remains a separate execution path:
 
 ```bash
-java -jar target\tracks-dsp-writer-all.jar --payload "00 01 03 35 04 01"
+java -jar target/tracks-dsp-script-all.jar --help
 ```
 
-Options:
-
-* `--payload <hex>`
-* `--pin <1234>`
-* `--expected-command <cmd>`
-* `--label <text>`
-* `--non-strict`
-* `--stream-host <host>`
-* `--stream-port <port>`
-* `--control-host <host>`
-* `--control-port <port>`
-* `--verbose`
-
----
-
-## 3. Script CLI
-
-Example:
-
-```bash
-java -jar target\tracks-dsp-script-all.jar --file script-example\01-status.dspd
-```
-
-Options:
-
-* `--file <path>`
-* `--stream-host <host>`
-* `--stream-port <port>`
-* `--control-host <host>`
-* `--control-port <port>`
-* `--verbose`
-
----
-
-## 4. Raw Write Tool
-
-Example:
-
-```bash
-java -cp target\tracks-dsp-script-all.jar de.drremote.dsp408.raw.DspRawWriteTool --host 192.168.0.166 --port 9761 --payload "00 01 03 35 04 01"
-```
-
-### FIR408 phase readback verification
-
-For a direct, all-channel phase storage check with automatic safety restore:
-
-```powershell
-java -cp target\tracks-dsp-script-all.jar `
-  de.drremote.dsp408.raw.Fir408PhaseReadVerifier
-```
-
-The verifier keeps all twelve channels muted, tests each phase as
-`0 degrees -> 180 degrees -> 0 degrees`, and compares the complete config
-before and after. Results are written below
-`out/fir/fir408-phase-readback-verification`.
-
-### FIR408 gate readback verification
-
-For a direct storage check of all four gate fields on the write-confirmed
-inputs InA and InD:
-
-```powershell
-java -cp target\tracks-dsp-script-all.jar `
-  de.drremote.dsp408.raw.Fir408GateReadVerifier
-```
-
-The verifier derives the current gate tuples from the assembled FIR408
-configuration, mutes all twelve channels, changes only one field at a time,
-and immediately restores the original tuple. It never sends an unmute
-command. The complete configuration must match byte-for-byte after the test.
-Results are written below
-`out/fir/fir408-gate-readback-verification`.
-
-Examples from the tool:
-
-### Mute Out1
-
-```bash
-java -cp target\tracks-dsp-script-all.jar de.drremote.dsp408.raw.DspRawWriteTool --handshake --login 1234 --payload "00 01 03 35 04 01"
-```
-
-### Unmute Out1
-
-```bash
-java -cp target\tracks-dsp-script-all.jar de.drremote.dsp408.raw.DspRawWriteTool --handshake --login 1234 --payload "00 01 03 35 04 00"
-```
-
-### Set Out1 phase to 180 degrees
-
-```bash
-java -cp target\tracks-dsp-script-all.jar de.drremote.dsp408.raw.DspRawWriteTool --handshake --login 1234 --payload "00 01 03 36 04 01"
-```
-
-### Set Out1 gain to 0.0 dB
-
-```bash
-java -cp target\tracks-dsp-script-all.jar de.drremote.dsp408.raw.DspRawWriteTool --handshake --login 1234 --payload "00 01 04 34 04 18 01"
-```
-
-### Set Out1 delay to 20.0 ms
-
-```bash
-java -cp target\tracks-dsp-script-all.jar de.drremote.dsp408.raw.DspRawWriteTool --handshake --login 1234 --payload "00 01 04 38 04 80 07"
-```
-
----
-
-## 5. GUI Capture Daemon
-
-Start the daemon:
-
-```bash
-java -cp target\tracks-dsp-script-all.jar de.drremote.dsp408.script.GuiCaptureDaemon
-```
-
-Use the CLI against it:
-
-```bash
-java -cp target\tracks-dsp-script-all.jar de.drremote.dsp408.script.GuiCaptureDaemonCli arm
-java -cp target\tracks-dsp-script-all.jar de.drremote.dsp408.script.GuiCaptureDaemonCli finish 1800 12000
-java -cp target\tracks-dsp-script-all.jar de.drremote.dsp408.script.GuiCaptureDaemonCli stop
-```
-
----
-
-## Script Language
-
-## Basic Syntax
-
-Preferred style uses function-call syntax with `()` and optional `;`. Legacy forms without parentheses are still supported for compatibility.
-
-Comments:
-
-```txt
-// comment
-# legacy comment
-```
-
-Variables:
-
-```txt
-let x = 123;
-let name = "test";
-```
-
-Quoted strings always stay strings (no auto-typing), even if they look like numbers or booleans:
-
-```txt
-print("123");
-print("true");
-print("0012");
-```
-
-Output:
-
-```txt
-print($x);
-print("Hello");
-```
-
-Conditions:
-
-```txt
-if ($x == 123) {
-    print("ok");
-} else if ($x > 100) {
-    print("big");
-} else {
-    print("other");
-}
-```
-
-Loops:
-
-```txt
-for (let i in 0..5) {
-    print($i);
-}
-```
-
-Assertions:
-
-```txt
-assert $x == 123;
-assert not ($x == 0);
-```
-
-Write to file:
-
-```txt
-save-text("out/result.txt", "Hello World");
-```
-
----
-
-## Script Commands
-
-### Connection / Session
-
-* `connect`
-* `connect(<streamHost>, <streamPort>, <controlHost>, <controlPort>)`
-* `disconnect`
-* `status`
-* `reset-session`
-* `ensure-session`
-* `clear-frames`
-* `handshake`
-* `login(<pin>)`
-* `read-block(<block>)`
-
-### GUI
-
-* `gui-connect`
-* `gui-connect(<streamHost>, <streamPort>)`
-* `gui-disconnect`
-* `gui-capture(<note>, [quietMs], [maxWaitMs])`
-* `gui-begin-capture()`
-* `gui-end-capture([quietMs], [maxWaitMs])`
-
-### Helper Functions
-
-* `len(...)`
-* `contains(...)`
-* `starts-with(...)`
-* `ends-with(...)`
-* `upper(...)`
-* `lower(...)`
-* `trim(...)`
-* `join(...)`
-* `at(...)`
-* `split(...)`
-* `replace(...)`
-
-### Byte/Hex Functions
-
-* `bytes(...)`
-* `hex(...)`
-* `slice(...)`
-* `ascii(...)`
-* `u8(...)`
-* `u16le(...)`
-* `u32le(...)`
-
-### Write
-
-* `write(...)`
-* `send-payload ...`
-* `tx ...`
-
----
-
-## Example Scripts
-
-## Check status
-
-```txt
-connect();
-let s = status();
-print($s);
-print($s.sessionActive);
-print($s.injectReady);
-```
-
-## Handshake and read a block
-
-```txt
-connect();
-reset-session();
-ensure-session();
-handshake();
-
-let resp = read-block(0x00);
-print($resp);
-print($resp.payloadHex);
-```
-
-## Capture a GUI action
-
-```txt
-gui-connect();
-let cap = gui-capture("Please perform the target action in the GUI now", 1500, 12000);
-print($cap);
-print($cap.lastWrite);
-```
-
-## Save multiple blocks
-
-```txt
-connect();
-reset-session();
-ensure-session();
-handshake();
-
-for (let i in 0..5) {
-    let resp = read-block($i);
-    save-text("out/block-${i}.txt", $resp.payloadHex);
-}
-```
-
----
-
-## Reverse-Engineering Strategy
-
-The most reliable strategy for finding real field mappings is:
-
-1. create a baseline dump
-2. change exactly one GUI value
-3. capture the GUI write frame
-4. create a second dump
-5. diff both dumps
-6. identify changed offsets
-7. repeat with several values
-8. confirm encoding and scaling
-
-This is important because:
-
-* write command structure and read storage structure are often different
-* the same parameter may use one encoding on write and another in block storage
-* isolated GUI write capture alone is usually not enough
-
----
-
-## Codex Workflow
-
-A strong setup is:
-
-1. keep the original GUI connected through the proxy
-2. let Codex run helper scripts / dumps / comparisons
-3. trigger one GUI action at a time
-4. let Codex analyze:
-
-   * last write frame
-   * changed blocks
-   * changed offsets
-   * value scaling candidates
-5. update documentation and repeat
-
-In practice, this means Codex can continuously decode the protocol in an iterative loop as long as the proxy and GUI stay active.
-
-The project does not implement an AI by itself; it provides the infrastructure that makes such an AI loop practical.
-
----
-
-## Public Tool Facade
-
-The `de.drremote.dsp408.tool` package contains simple entry points:
-
-### `ReadTool`
-
-```java
-String json = ReadTool.dumpAllJson(streamHost, streamPort, controlHost, controlPort, pin, verbose);
-```
-
-### `WriteTool`
-
-```java
-ProxyResponse response = WriteTool.sendPayloadOnce(
-    streamHost,
-    streamPort,
-    controlHost,
-    controlPort,
-    pin,
-    verbose,
-    payload,
-    expectedCommand,
-    strictResponse,
-    label
-);
-```
-
-### `ScriptTool`
-
-```java
-ScriptTool.runScriptFile(streamHost, streamPort, controlHost, controlPort, verbose, file);
-ScriptTool.runScriptText(streamHost, streamPort, controlHost, controlPort, verbose, scriptText);
-```
-
----
-
-## Technical Notes
-
-## Response Matching
-
-`StreamChannel.waitForResponse(...)` works in two steps:
-
-1. it waits for the matching `PC_TO_DSP` frame to appear in the stream
-2. then it searches for the next matching `DSP_TO_PC` response
-
-Optionally it can check for a specific command code.
-
-## Session Readiness
-
-`ProxyClient.ensureSession()` waits actively until:
-
-* `sessionActive == true`
-* `injectReady == true`
-
-## Checksum
-
-Both dump mode and raw mode expose checksum status.
-
-## Dump Blocks
-
-Currently, blocks from:
-
-* `0x00`
-* to `0x1C`
-
-are read.
-
----
-
-## Safety / Caution
-
-Write functions and raw access can change the DSP state.
-
-Therefore:
-
-* test with read/dump first
-* only send known payloads for writes
-* if possible, work against a test setup first
-* use raw frame access only for low-level debugging
-
----
-
-## Known Limits
-
-* JSON is handled with a small in-house helper (`JsonUtil`), not an external JSON library
-* the script language is small and deliberately pragmatic
-* the parser is built for the internal DSL style, not for a general-purpose language
-* `RawSocketClient` is intended for diagnostics and tests, not robust long-running use
-* some defaults are strongly tied to your local proxy/DSP setup
-* many parameters still require repeated GUI-write + readback-diff analysis before they can be considered decoded
-
----
-
-## Typical Workflow
-
-### Read / Analysis
-
-1. start proxy
-2. connect DSP/original software
-3. `status`
-4. `reset-session`
-5. `ensure-session`
-6. `handshake`
-7. `read-block(...)` or full dump
-
-### GUI Reverse Engineering
-
-1. connect original software through proxy
-2. keep the GUI connected
-3. `gui-connect`
-4. capture a GUI action
-5. re-read DSP blocks
-6. diff old vs new dumps
-7. correlate write payload with changed read offsets
-8. document the result
-9. repeat in a continuous AI loop
-
-### Event-Based GUI Capture
-
-For setups where GUI and DSP communicate continuously, prefer event-based capture instead of fixed waiting windows.
-
-Use:
-
-- `guiActionCapture(...)`
-
-This mode:
-
-- waits for the first real GUI write
-- ignores `0x40` background traffic
-- automatically stops after the action settles
-
-It is especially useful for:
-
-- mute / phase toggles
-- single parameter clicks
-- gain or delay fader moves
-
-### Fader Decoding Helpers
-
-The DSL also supports write-series analysis helpers that make fader reverse engineering easier:
-
-- `writesByCommand(...)`
-- `writesByCommandAndChannel(...)`
-- `payloadSeries(...)`
-- `u16Series(...)`
-- `changingOffsetsAcrossWrites(...)`
-
-These helpers allow you to isolate one fader movement and identify which payload offsets and `u16le` values change across the write series.
-
-### Write Test
-
-1. prepare session
-2. optional login
-3. send known payload
-4. verify response
-5. verify stored value via fresh dump if needed
-
----
-
-## License / Status
-
-Internal reverse-engineering/debugging helper for DSP408-related tests and automation.
-
-Project status: experimental, but already strongly structured around:
-
-* Read
-* Write
-* Dump
-* Script
-* GUI Capture
-* AI-assisted continuous protocol decoding
-
-```
+Its `--file` option actually executes script functions. A successful check does
+not execute the script, and the runner does not yet require it automatically.
+The [syntax reference](DSPD-SYNTAX.md) describes modern and legacy forms;
+[DSPD check](docs/DSPD-CHECK.md) explains static limits and five known errors
+in the preserved example scripts.
+
+## Parameters and change planning
+
+Gain, mute and delay share definitions for all twelve channels. Catalogs apply
+to the documented versions **DSP408 V0104** and **FIR408 V0113P**. Known write
+formats and confirmed read positions have separate evidence. Unconfirmed,
+missing and invalid values remain explicitly marked.
+
+For FIR408, all twelve gain and delay positions are confirmed. For mute, only
+InD and Out8 have explicit FIR-specific evidence so far. `plan` produces no
+payload for blocked or already unchanged fields.
+
+- [Parameters, ranges and sources](docs/PARAMETERS.md)
+- [Change file, preview and JSON schema](docs/CHANGE-PREVIEW.md)
+
+Use explicit [`apply`](docs/EXECUTION.md#apply-a-change-request) to transmit a
+request against a saved baseline. It rechecks firmware and all requested values
+against fresh state, then validates ACK and readback for each change. A failed
+write may already have effects; reports retain partial results and there is no
+retry or rollback. Existing writer tools and raw DSPD `write` keep their own
+behavior and do not automatically use this workflow.
+
+## Documentation
+
+| Topic | Document |
+| --- | --- |
+| Getting started and reading order | [Documentation overview](docs/README.md) |
+| Common CLI, older tools, output and exit codes | [CLI](docs/CLI.md) |
+| Reading, capture and protocol investigation | [Workflows](docs/WORKFLOWS.md) |
+| Build, packages, tests and extensions | [Development](docs/DEVELOPMENT.md) |
+| System boundaries and shared library | [Architecture](../ARCHITECTURE.md) |
+| Checked scripts, explicit apply and partial results | [Execution](docs/EXECUTION.md) |
+| Implemented features, open work, next stages | [Roadmap](docs/ROADMAP.md) |
+| Contribution, source dependencies and verification | [Contributing](CONTRIBUTING.md) |
+
+[Additional script examples](script-example.md) and
+[DSP408 protocol notes](DSPINFO.md) remain as older detailed references.
+JSON libraries, original `.dspd` scripts and captures under `out/` are evidence.
+An assumption alone does not turn them into confirmed mappings.
+
+## Status
+
+The reference capture from 2026-10-31 contains 32 FIR408 blocks with 1556 data
+bytes. The [fixture](src/test/resources/live/fir408-v0113p-20261031.json) and
+[provenance record](src/test/resources/live/fir408-v0113p-20261031.provenance.json)
+are in the repository. They do not represent the current live state.
+
+The tool supports protocol development. Direct value comparison with Windows
+Editor V1.12 and further FIR mute confirmations remain open. The supplied
+firmware updater was not run during this work. The current project contains
+no separate license text or hosted CI workflow. [Contributing](CONTRIBUTING.md)
+describes the local verification script and required protocol source checkout.

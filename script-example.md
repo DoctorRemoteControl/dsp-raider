@@ -1,5 +1,15 @@
 # DSP408 Script Syntax
 
+> Additional detailed script reference. Start with the current
+> [DSPD syntax](DSPD-SYNTAX.md); offline checking is described in
+> [DSPD check](docs/DSPD-CHECK.md). For CLI options and build commands, see
+> [CLI](docs/CLI.md) and [Development](docs/DEVELOPMENT.md).
+> The following examples describe execution: they can send device commands
+> and write files. `check` does not execute these functions; the existing
+> separate interpreter does not check with the compiler automatically. Common
+> CLI `run` now compiles the complete script before checked AST execution; see
+> [Execution](docs/EXECUTION.md) for that path and the new parameter functions.
+
 This file describes the syntax of `.dspd` scripts in `tracks-dsp-raider`.
 
 The script language is intentionally small and pragmatic.

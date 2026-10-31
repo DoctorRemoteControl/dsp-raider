@@ -1,5 +1,13 @@
 # DSPINFO.md
 
+> Historical protocol notes for **DSP408 V0104**. Block ranges and memory
+> mappings do not generally transfer to FIR408 or other firmware. The current
+> gain/mute/delay overview, including evidence status, is in
+> [PARAMETERS.md](docs/PARAMETERS.md).
+> [Architecture](../ARCHITECTURE.md) describes shared framing;
+> [Workflows](docs/WORKFLOWS.md) shows current read and capture commands.
+> The original observations are retained below as source context.
+
 ## Overview
 
 This document describes the **roughly decoded communication layout** of the **t.racks / Thomann Track DSP 408** (`DSP408`) and explains the most important differences between **Read** and **Write**.
