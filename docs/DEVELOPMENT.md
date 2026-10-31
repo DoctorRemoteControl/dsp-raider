@@ -36,9 +36,13 @@ For a standalone Raider checkout, [Contributing](../CONTRIBUTING.md) documents
 `bash ci/verify.sh`. It requires a sibling `dsp408-protocol` source checkout or
 `DSP408_PROTOCOL_DIR`, installs the shared library and then verifies Raider.
 The protocol artifact is not published by this repository. There is no hosted
-CI workflow or license file configured yet. Keep focused changes and explicit
-staging consistent with that contribution policy; original evidence remains
-unchanged.
+verification result yet. A draft GitHub Actions workflow now locks the protocol
+source revision in `ci/protocol-revision`; publication of that source repository
+and commit is still required before the workflow can run successfully. Local
+`ci/verify.sh` builds the supplied checkout rather than fetching or enforcing
+that revision. No license file is configured yet. Keep focused changes and
+explicit staging consistent with the contribution policy; original evidence
+remains unchanged.
 
 ## Packages and data flow
 

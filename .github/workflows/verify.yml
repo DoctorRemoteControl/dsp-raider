@@ -1,0 +1,53 @@
+# Draft: publish the protocol repository and locked commit before hosted verification.
+name: Verify (draft)
+
+on: [push, pull_request, workflow_dispatch]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out Raider
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: tracks-dsp-raider
+          persist-credentials: false
+
+      - name: Read protocol revision
+        id: protocol
+        shell: bash
+        run: |
+          protocol_ref="$(cat tracks-dsp-raider/ci/protocol-revision)"
+          if [[ ! "$protocol_ref" =~ ^[0-9a-f]{40}$ ]]; then
+            printf '%s\n' 'Invalid protocol revision: expected a full 40-character lowercase commit SHA.' >&2
+            exit 2
+          fi
+          printf 'ref=%s\n' "$protocol_ref" >> "$GITHUB_OUTPUT"
+
+      - name: Check out protocol source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: DoctorRemoteControl/dsp408-protocol
+          ref: ${{ steps.protocol.outputs.ref }}
+          path: dsp408-protocol
+          persist-credentials: false
+
+      - name: Set up Java
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+          overwrite-settings: false
+
+      - name: Verify
+        env:
+          MAVEN_OPTS: -Dmaven.repo.local=${{ runner.temp }}/dsp408-m2
+        run: bash tracks-dsp-raider/ci/verify.sh

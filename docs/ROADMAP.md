@@ -2,9 +2,9 @@
 
 [Overview](README.md) · [Architecture](../../ARCHITECTURE.md) · [Execution](EXECUTION.md)
 
-As of 2026-10-31. The first three architecture stages are implemented. Physical
-device validation of the new application workflow and repository publication
-setup remain separate work.
+As of 2026-11-01. The first three architecture stages are implemented. Initial
+live validation covers checked reads and an Out8 gain change/restoration;
+broader device coverage and repository publication remain separate work.
 
 ## Available now
 
@@ -47,15 +47,17 @@ serial, and cannot make snapshots atomic against other writers.
 
 - Compare values directly with Windows Editor V1.12 and collect controlled
   GUI/readback evidence for the ten unconfirmed FIR mute mappings.
-- Validate the new checked execution and application workflow against an actual
-  device in an explicitly authorized integration step. Current automated
-  coverage uses saved fixtures and injected sessions; it is not physical write
-  validation.
+- Extend [live validation](LIVE-VALIDATION.md) beyond the completed FIR408 V0113P
+  raw-read and Out8 gain change/restoration test. Other parameter families,
+  interrupted communication and concurrent writers still need dedicated checks.
+  Automated tests use saved fixtures and injected sessions.
 - Add further parameter families such as channel names, polarity, PEQ or
   crossover only with their own units, encodings and separate read/write sources.
 - Complete repository-owner decisions for publication, license and hosted CI.
-  The current local [verification script](../ci/verify.sh) requires the protocol
-  source checkout; see [Contributing](../CONTRIBUTING.md).
+  The draft workflow pins the protocol source commit, but its repository and
+  locked commit still need publication and a successful hosted run. The local
+  [verification script](../ci/verify.sh) requires the protocol source checkout;
+  see [Contributing](../CONTRIBUTING.md#automated-verification-draft).
 
 Existing raw DSPD tools remain available for investigations. Firmware updates
 and treating other firmware revisions as equivalent are outside this roadmap.

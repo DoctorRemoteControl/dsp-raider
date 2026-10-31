@@ -28,8 +28,8 @@ java -jar target/dsp-raider.jar plan \
 
 The reference dump contains real, preserved FIR408 V0113P data. The requested
 changes file is a simulated example. These commands open no device connection.
-For an individual build, install `../dsp408-protocol` locally first; see
-[Development](docs/DEVELOPMENT.md).
+For an individual build, provide the independent `../dsp408-protocol` source
+checkout and run `bash ci/verify.sh`; see [Development](docs/DEVELOPMENT.md).
 
 ## Which command should I use?
 
@@ -127,5 +127,12 @@ are in the repository. They do not represent the current live state.
 The tool supports protocol development. Direct value comparison with Windows
 Editor V1.12 and further FIR mute confirmations remain open. The supplied
 firmware updater was not run during this work. The current project contains
-no separate license text or hosted CI workflow. [Contributing](CONTRIBUTING.md)
-describes the local verification script and required protocol source checkout.
+no separate license text. A [draft GitHub Actions workflow](.github/workflows/verify.yml)
+and pinned protocol source revision are prepared locally; publication of the
+protocol dependency and the first hosted run are still pending.
+[Contributing](CONTRIBUTING.md#automated-verification-draft) describes the
+workflow, local verification script and required protocol source checkout.
+
+[Live validation](docs/LIVE-VALIDATION.md) records successful checked reads of
+all 32 FIR408 V0113P blocks and an Out8 gain change/restoration with verified
+ACKs, readback and an unchanged final configuration.
