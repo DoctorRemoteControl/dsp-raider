@@ -36,7 +36,7 @@ no connection is intended.
 ## 2. Read current state
 
 Start the proxy in its own open terminal with stream and control enabled:
-[complete startup command](../../tracks-dsp-proxy/README.md#start-for-raider).
+[complete startup command](https://github.com/DoctorRemoteControl/dsp408-proxy#start-for-raider).
 The target in the local reference setup is `192.168.0.166:9761`.
 
 Then, in a second terminal in the Raider project:

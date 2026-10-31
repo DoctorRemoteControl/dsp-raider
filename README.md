@@ -1,19 +1,25 @@
 # DSP Raider
 
+[![Verify](https://github.com/DoctorRemoteControl/dsp-raider/actions/workflows/verify.yml/badge.svg)](https://github.com/DoctorRemoteControl/dsp-raider/actions/workflows/verify.yml)
+
 Java tool for **t.racks DSP408 and FIR408**: read device state, investigate
 protocol traffic, compare saved snapshots, prepare changes, execute checked
 DSPD scripts and explicitly apply confirmed parameter changes.
 
 ## Quick start without a DSP
 
-Requirements: JDK 21 and Maven. Build in the shared
-[DSP408 workspace](../README.md):
+Requirements: JDK 21, Maven and Git. For a new standalone checkout:
 
 ```bash
-mvn -B -ntp verify
+git clone https://github.com/DoctorRemoteControl/dsp408-protocol.git
+git clone https://github.com/DoctorRemoteControl/dsp-raider.git tracks-dsp-raider
+cd tracks-dsp-raider
+git -C ../dsp408-protocol checkout --detach "$(cat ci/protocol-revision)"
+bash ci/verify.sh
 ```
 
-Then, from `tracks-dsp-raider`:
+For an existing multi-project workspace, use its
+[build instructions](docs/DEVELOPMENT.md#building). Then, from `tracks-dsp-raider`:
 
 ```bash
 java -jar target/dsp-raider.jar --help
@@ -28,8 +34,8 @@ java -jar target/dsp-raider.jar plan \
 
 The reference dump contains real, preserved FIR408 V0113P data. The requested
 changes file is a simulated example. These commands open no device connection.
-For an individual build, provide the independent `../dsp408-protocol` source
-checkout and run `bash ci/verify.sh`; see [Development](docs/DEVELOPMENT.md).
+The verification script installs the independently versioned protocol library
+before building Raider; see [Development](docs/DEVELOPMENT.md).
 
 ## Which command should I use?
 
@@ -49,7 +55,7 @@ checkout and run `bash ci/verify.sh`; see [Development](docs/DEVELOPMENT.md).
 All options, file formats and exit codes are documented in the
 [CLI reference](docs/CLI.md). Default read endpoints are `127.0.0.1:19081`
 (stream) and `127.0.0.1:19082` (control). The
-[proxy](../tracks-dsp-proxy/README.md#start-for-raider) must have both listeners
+[proxy](https://github.com/DoctorRemoteControl/dsp408-proxy#start-for-raider) must have both listeners
 enabled. Reading also works without the original Windows software.
 
 ## Checking and running DSPD
@@ -107,7 +113,7 @@ behavior and do not automatically use this workflow.
 | Common CLI, older tools, output and exit codes | [CLI](docs/CLI.md) |
 | Reading, capture and protocol investigation | [Workflows](docs/WORKFLOWS.md) |
 | Build, packages, tests and extensions | [Development](docs/DEVELOPMENT.md) |
-| System boundaries and shared library | [Architecture](../ARCHITECTURE.md) |
+| System boundaries and shared library | [Architecture](docs/ARCHITECTURE.md) |
 | Checked scripts, explicit apply and partial results | [Execution](docs/EXECUTION.md) |
 | Implemented features, open work, next stages | [Roadmap](docs/ROADMAP.md) |
 | Contribution, source dependencies and verification | [Contributing](CONTRIBUTING.md) |
@@ -127,10 +133,10 @@ are in the repository. They do not represent the current live state.
 The tool supports protocol development. Direct value comparison with Windows
 Editor V1.12 and further FIR mute confirmations remain open. The supplied
 firmware updater was not run during this work. The current project contains
-no separate license text. A [draft GitHub Actions workflow](.github/workflows/verify.yml)
-and pinned protocol source revision are prepared locally; publication of the
-protocol dependency and the first hosted run are still pending.
-[Contributing](CONTRIBUTING.md#automated-verification-draft) describes the
+no separate license text. The [GitHub Actions workflow](.github/workflows/verify.yml)
+builds from pinned protocol source; published results are available in
+[GitHub Actions](https://github.com/DoctorRemoteControl/dsp-raider/actions/workflows/verify.yml).
+[Contributing](CONTRIBUTING.md#automated-verification) describes the
 workflow, local verification script and required protocol source checkout.
 
 [Live validation](docs/LIVE-VALIDATION.md) records successful checked reads of

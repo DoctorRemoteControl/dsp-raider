@@ -1,10 +1,10 @@
 # Status and next steps
 
-[Overview](README.md) · [Architecture](../../ARCHITECTURE.md) · [Execution](EXECUTION.md)
+[Overview](README.md) · [Architecture](ARCHITECTURE.md) · [Execution](EXECUTION.md)
 
 As of 2026-11-01. The first three architecture stages are implemented. Initial
 live validation covers checked reads and an Out8 gain change/restoration;
-broader device coverage and repository publication remain separate work.
+broader device coverage remains separate work.
 
 ## Available now
 
@@ -53,11 +53,10 @@ serial, and cannot make snapshots atomic against other writers.
   Automated tests use saved fixtures and injected sessions.
 - Add further parameter families such as channel names, polarity, PEQ or
   crossover only with their own units, encodings and separate read/write sources.
-- Complete repository-owner decisions for publication, license and hosted CI.
-  The draft workflow pins the protocol source commit, but its repository and
-  locked commit still need publication and a successful hosted run. The local
+- Keep the published protocol source pin and automated builds current, and
+  complete the owner's license decision. The local
   [verification script](../ci/verify.sh) requires the protocol source checkout;
-  see [Contributing](../CONTRIBUTING.md#automated-verification-draft).
+  see [Contributing](../CONTRIBUTING.md#automated-verification).
 
 Existing raw DSPD tools remain available for investigations. Firmware updates
 and treating other firmware revisions as equivalent are outside this roadmap.

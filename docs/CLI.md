@@ -29,7 +29,7 @@ Proxy options are `--stream-host` and `--stream-port` (default
 `127.0.0.1:19081`), `--control-host` and `--control-port` (default
 `127.0.0.1:19082`), plus `--verbose`. They apply to `connect`, `identify`, `dump`, `run` and
 `apply`. `capture` uses only the two stream options.
-The [proxy](../../tracks-dsp-proxy/README.md#start-for-raider) must have its
+The [proxy](https://github.com/DoctorRemoteControl/dsp408-proxy#start-for-raider) must have its
 corresponding listeners explicitly enabled.
 
 Specify options as `--name value`. Unknown, duplicate or command-inappropriate

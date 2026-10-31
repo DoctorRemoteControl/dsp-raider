@@ -12,13 +12,13 @@ syntax.
 | build and try it without hardware | [Project README](../README.md#quick-start-without-a-dsp) |
 | look up a command or its exit code | [CLI reference](CLI.md) |
 | read the DSP or record GUI traffic | [Workflows](WORKFLOWS.md) |
-| connect my own stream/control client | [Proxy interfaces](../../tracks-dsp-proxy/PROTOCOL.md) |
+| connect my own stream/control client | [Proxy interfaces](https://github.com/DoctorRemoteControl/dsp408-proxy/blob/main/PROTOCOL.md) |
 | write a DSPD script | [DSPD syntax](../DSPD-SYNTAX.md) |
 | understand what the compiler can check | [DSPD check](DSPD-CHECK.md) |
 | execute a checked script or apply parameter changes | [Execution](EXECUTION.md) |
 | prepare changes with old/new values | [Change preview](CHANGE-PREVIEW.md) |
 | assess confidence in a read position or unit | [Parameters and evidence](PARAMETERS.md) |
-| extend the code | [Development](DEVELOPMENT.md) and [Architecture](../../ARCHITECTURE.md) |
+| extend the code | [Development](DEVELOPMENT.md) and [Architecture](ARCHITECTURE.md) |
 | choose the next work | [Roadmap](ROADMAP.md) |
 | contribute and reproduce verification | [Contributing](../CONTRIBUTING.md) |
 

@@ -20,9 +20,9 @@ not currently published by this repository, so cloning Raider alone does not
 provide its source or Maven artifact. The workspace lock records committed
 component revisions; see [Development](docs/DEVELOPMENT.md).
 
-## Automated verification draft
+## Automated verification
 
-The [draft GitHub Actions workflow](.github/workflows/verify.yml) prepares
+The [GitHub Actions workflow](.github/workflows/verify.yml) prepares
 verification on pushes, pull requests and manual runs. It checks out
 `DoctorRemoteControl/dsp408-protocol` at the full commit SHA recorded in
 [`ci/protocol-revision`](ci/protocol-revision), validates the SHA format and
@@ -30,9 +30,9 @@ runs `ci/verify.sh` with Java 21 and a fresh temporary Maven repository. The
 actions themselves are pinned to full commits and no dependency cache is
 used. Automated verification must not contact a physical DSP.
 
-The protocol source repository and locked commit must be published before
-this workflow can verify Raider on GitHub. Publication and the first hosted
-run are still pending; a local workflow file is not a successful hosted run.
+The protocol source repository and locked commit must be available before
+this workflow can verify Raider on GitHub. Published build results are listed
+in [GitHub Actions](https://github.com/DoctorRemoteControl/dsp-raider/actions/workflows/verify.yml).
 The workflow assumes readable protocol source without an additional secret;
 private cross-repository access needs separate authentication configuration.
 
@@ -72,6 +72,5 @@ Use the current `target/dsp-raider.jar` for verification.
 
 Do not commit credentials or runtime state. Publishing, choosing a license and
 setting remote repository policy are repository-owner decisions. This checkout
-does not yet contain a license file. The hosted verification workflow is a
-local draft awaiting publication and verification. `ci/verify.sh` provides
-the local verification command for a correctly assembled checkout.
+does not yet contain a license file. `ci/verify.sh` provides the local
+verification command for a correctly assembled checkout.

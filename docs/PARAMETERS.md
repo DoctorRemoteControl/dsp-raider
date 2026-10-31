@@ -60,7 +60,7 @@ name, without a neighboring controller project.
   from 2026-07-16, plus delay readback for all channels at 0/680 ms and
   additional 20 ms evidence for both bytes. Older mute positions in this file
   are not used.
-- [Controller FIR library](../../DSP408Controller/dsp408-parent/docs/protocol-spec/DspLib-408-fir.json):
+- [Controller FIR source excerpt](../src/test/resources/parameters/channel-locations.json):
   newer mute positions and explicit InD/Out8 observations from 2026-08-06.
   Inherited DSP observations do not count as FIR confirmation.
 - [Real reference dump](../src/test/resources/live/fir408-v0113p-20261031.json)

@@ -1,5 +1,4 @@
-# Draft: publish the protocol repository and locked commit before hosted verification.
-name: Verify (draft)
+name: Verify
 
 on: [push, pull_request, workflow_dispatch]
 
