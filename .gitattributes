@@ -1,0 +1,17 @@
+# Normalize text in Git without rewriting existing working files.
+* text=auto
+*.java text eol=lf
+*.md text eol=lf
+*.xml text eol=lf
+*.sh text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.jar binary
+*.zip binary
+*.pdf binary
+*.png binary
+*.jpg binary
+*.wav binary

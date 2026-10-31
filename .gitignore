@@ -12,6 +12,7 @@
 /target/generated-test-sources/
 
 # Built artifacts
+/*.jar
 
 /*.war
 /*.ear
@@ -19,6 +20,8 @@
 # Logs / runtime captures
 /proxy_logs/
 /backup/
+/out/local/
+/.m2/
 
 
 # OS files
