@@ -1,6 +1,62 @@
 # tracks-dsp-raider
 
+Build from the [DSP408 workspace](../README.md) with `mvn verify`, or first install
+`../dsp408-protocol` locally before building this repository alone. Newly built
+standalone JARs are written to `target/`. See [the architecture](../ARCHITECTURE.md)
+for the shared protocol library, injectable sessions and separated FIR analysis.
+
 Java toolkit for accessing and reverse-engineering a DSP408 via a local proxy stack.
+
+## Common entry point
+
+After `mvn verify`, the existing workflows are also available in one runnable JAR:
+
+```bash
+java -jar target/dsp-raider.jar --help
+java -jar target/dsp-raider.jar connect
+java -jar target/dsp-raider.jar identify --out identity.json
+java -jar target/dsp-raider.jar dump --out snapshot.json
+java -jar target/dsp-raider.jar decode --in snapshot.json --out decoded.md
+java -jar target/dsp-raider.jar diff --before snapshot.json --after later.json
+java -jar target/dsp-raider.jar plan --in snapshot.json --changes examples/change-preview.json
+java -jar target/dsp-raider.jar capture --out frames.json --duration-ms 5000
+java -jar target/dsp-raider.jar decode --in frames.json --lib DspLib-408-fir.json
+```
+
+Online commands use the existing proxy at stream/control ports 19081/19082;
+`--stream-host`, `--stream-port`, `--control-host`, `--control-port` select other
+endpoints. Capture uses only the stream endpoint and sends no application data.
+Decode/diff/plan work offline. Output paths must be new files so references are never
+overwritten. A failed dump can retain partial diagnostic JSON with `ok: false`;
+that file is rejected as a successful snapshot by offline analysis.
+
+Gain, Mute and Delay now share a [version-specific parameter model](docs/PARAMETERS.md)
+for all 12 channels. Decode reports show evidence status and read positions;
+diff reports show engineering values before the complete raw comparison.
+Unknown bits, missing data and invalid raw values stay explicit. Confirmed
+parameter maps are available for DSP408 V0104 and FIR408 V0113P only.
+
+The [change preview](docs/CHANGE-PREVIEW.md) compares requested Gain/Mute/Delay
+values with a saved snapshot, reports quantization, unchanged and blocked fields,
+and shows prepared payloads for confirmed changes. It sends nothing and supports
+text (default) or `--format json` output. A blocked baseline never produces a
+payload, even if its write command is known.
+
+The new reader reuses an existing session and never resets it. FIR408 uses blocks
+00..1F; recognized DSP408 uses 00..1C. Unknown model strings need an explicit
+`--end-block` for reads. The detailed FIR408 V0113P memory report requires all
+blocks and valid wire checksums/indices. Other profiles receive a labelled raw
+block overview, plus parameter values when an exact catalog exists.
+Capture parameter-write interpretation uses the explicitly selected
+field library; without one, the report shows verified wire frames and ASCII.
+
+The real-device regression fixture was read from **FIR408 V0113P** on 2026-10-31:
+32 blocks, 1,556 data bytes, repeated without changes. Its provenance is next to
+the fixture under `src/test/resources/live/`. Full reference artifacts live in
+`/home/xla/drremote/Archiv/DSP408/read-reference-20261031-201033/`.
+Direct comparison with the Windows Editor V1.12 screen has not been performed;
+the Linux workspace has no Windows/Wine runtime. Firmware Updater V1.15 is a
+separate supplied artifact and was not executed.
 
 The project combines read, write, scripting, and GUI-capture tooling so that the DSP protocol can be analyzed in a structured way.  
 A key use case is **continuous AI-assisted decoding**: while the original GUI stays connected through the proxy, Codex can repeatedly observe GUI writes, read back DSP blocks, compare dumps, and refine protocol hypotheses in an ongoing decode loop.

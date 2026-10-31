@@ -6,6 +6,7 @@ import de.drremote.dsp408.util.HexUtil;
 import de.drremote.dsp408.util.JsonUtil;
 
 import java.io.BufferedReader;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
@@ -27,7 +28,10 @@ final class StreamChannel implements AutoCloseable {
     private Thread readerThread;
 
     private final AtomicBoolean running = new AtomicBoolean(false);
-    private final LinkedBlockingQueue<StreamFrameEvent> frames = new LinkedBlockingQueue<>();
+    private record StreamRead(StreamFrameEvent frame, IOException failure) { }
+    private final LinkedBlockingQueue<StreamRead> frames = new LinkedBlockingQueue<>();
+    private volatile IOException terminalFailure;
+    private volatile long generation;
 
     StreamChannel(String host, int port, boolean verbose) {
         this.host = host;
@@ -39,8 +43,12 @@ final class StreamChannel implements AutoCloseable {
         socket = new Socket();
         socket.connect(new InetSocketAddress(host, port), (int) timeoutMs);
         reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
+        long currentGeneration = ++generation;
+        BufferedReader input = reader;
+        terminalFailure = null;
+        frames.clear();
         running.set(true);
-        readerThread = Thread.ofVirtual().name("proxy-stream-reader").start(this::readerLoop);
+        readerThread = Thread.ofVirtual().name("proxy-stream-reader").start(() -> readerLoop(currentGeneration,input));
         log("Connected to proxy stream " + host + ":" + port);
     }
 
@@ -58,13 +66,7 @@ final class StreamChannel implements AutoCloseable {
         while (System.currentTimeMillis() < deadline) {
             long waitMs = Math.max(1, deadline - System.currentTimeMillis());
 
-            StreamFrameEvent ev;
-            try {
-                ev = frames.poll(waitMs, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new IOException("Interrupted while waiting for streamed frame", e);
-            }
+            StreamFrameEvent ev = waitForAnyFrame(waitMs);
 
             if (ev == null) {
                 continue;
@@ -108,28 +110,41 @@ final class StreamChannel implements AutoCloseable {
 
     StreamFrameEvent waitForAnyFrame(long timeoutMs) throws IOException {
         try {
-            return frames.poll(Math.max(1L, timeoutMs), TimeUnit.MILLISECONDS);
+            if (terminalFailure != null && frames.isEmpty()) throw terminalFailure;
+            StreamRead read = frames.poll(Math.max(1L, timeoutMs), TimeUnit.MILLISECONDS);
+            if (read == null) {
+                if (terminalFailure != null) throw terminalFailure;
+                return null;
+            }
+            if (read.failure() != null) throw read.failure();
+            return read.frame();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IOException("Interrupted while waiting for streamed frame", e);
         }
     }
 
-    private void readerLoop() {
+    private void readerLoop(long currentGeneration, BufferedReader input) {
+        IOException failure = new EOFException("Proxy stream disconnected");
         try {
             String line;
-            while (running.get() && (line = reader.readLine()) != null) {
+            while (running.get() && generation == currentGeneration && (line = input.readLine()) != null) {
                 StreamFrameEvent ev = parseFrameEvent(line);
-                if (ev != null) {
-                    frames.offer(ev);
+                if (ev != null && generation == currentGeneration) {
+                    frames.offer(new StreamRead(ev,null));
                 }
             }
         } catch (IOException e) {
+            failure = new IOException("Proxy stream failed: " + e.getMessage(),e);
             if (running.get()) {
                 log("Stream reader stopped: " + abbreviate(e.getMessage(), 160));
             }
         } finally {
-            running.set(false);
+            if (generation == currentGeneration) {
+                terminalFailure = failure;
+                running.set(false);
+                frames.offer(new StreamRead(null,failure));
+            }
         }
     }
 

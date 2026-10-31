@@ -7,13 +7,14 @@ import de.drremote.dsp408.model.ProxyStatus;
 import de.drremote.dsp408.model.SniffedFrame;
 import de.drremote.dsp408.model.StreamFrameEvent;
 import de.drremote.dsp408.util.WaitUtil;
+import de.drremote.dsp408.session.DspSession;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class ProxyClient implements AutoCloseable {
+public final class ProxyClient implements DspSession {
     private final ProxyConfig config;
     private final StreamChannel streamChannel;
     private final ControlChannel controlChannel;
@@ -31,9 +32,15 @@ public final class ProxyClient implements AutoCloseable {
             return;
         }
 
-        streamChannel.connect(ProxyConstants.STREAM_CONNECT_TIMEOUT_MS);
-        controlChannel.connect();
-        connected = true;
+        try {
+            streamChannel.connect(ProxyConstants.STREAM_CONNECT_TIMEOUT_MS);
+            controlChannel.connect();
+            connected = true;
+        } catch (IOException | RuntimeException failure) {
+            try { close(); }
+            catch (IOException cleanup) { failure.addSuppressed(cleanup); }
+            throw failure;
+        }
     }
 
     public ProxyStatus status() throws IOException {

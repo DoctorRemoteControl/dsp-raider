@@ -2,6 +2,7 @@ package de.drremote.dsp408.decode;
 
 import de.drremote.dsp408.dump.DumpByteReaders;
 import de.drremote.dsp408.model.SniffedFrame;
+import de.drremote.dsp408.parameters.ParameterKind;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +36,21 @@ public final class WriteDecodeService {
         Integer command = frame.command();
         if (command == null) {
             return unknown("null", "no command");
+        }
+
+        ParameterKind scalar=switch(command) {
+            case 0x34 -> ParameterKind.GAIN;
+            case 0x35 -> ParameterKind.MUTE;
+            case 0x38 -> ParameterKind.DELAY;
+            default -> null;
+        };
+        if(scalar!=null) {
+            if(payload.length!=5+scalar.width() || u8(payload,2)!=payload.length-3)
+                return unknown(frame.commandHex(),"invalid "+scalar.label()+" payload length; payload="+frame.payloadHex());
+            int channel=u8(payload,4);
+            int raw=scalar.width()==1 ? u8(payload,5) : u16le(payload,5);
+            if(channel>11 || raw>scalar.rawMaximum())
+                return unknown(frame.commandHex(),"invalid "+scalar.label()+" channel="+channel+" raw="+raw);
         }
 
         return switch (command) {
@@ -217,7 +233,7 @@ public final class WriteDecodeService {
         requireLen(payload, 7, "delay");
         int channel = u8(payload, 4);
         int raw = u16le(payload, 5);
-        double ms = raw / 96.0;
+        double ms = ParameterKind.DELAY.rawToValue(raw);
 
         return match(commandHex, "$.parameters.delay.write",
                 "Delay " + lib.channelName(channel),
@@ -416,6 +432,7 @@ public final class WriteDecodeService {
         int output = u8(payload, 4);
         int input = u8(payload, 5);
         int raw = u16le(payload, 6);
+        if(raw>ParameterKind.GAIN.rawMaximum())return unknown(commandHex,"invalid matrix Gain raw="+raw);
         double db = lib.matrixCrosspointGainDb(raw);
 
         return match(commandHex, "$.parameters.matrix_crosspoint_gain.write",

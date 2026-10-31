@@ -1,7 +1,6 @@
 package de.drremote.dsp408.script;
 
 import de.drremote.dsp408.proxy.ProxyConstants;
-import de.drremote.dsp408.tool.ScriptTool;
 
 import java.nio.file.Path;
 
@@ -28,14 +27,13 @@ public final class DspScriptCli {
         }
 
         try {
-            ScriptTool.runScriptFile(
+            new DspScriptEngine(
                     options.streamHost,
                     options.streamPort,
                     options.controlHost,
                     options.controlPort,
-                    options.verbose,
-                    options.file
-            );
+                    options.verbose
+            ).execute(options.file);
         } catch (Exception ex) {
             System.err.println("ERROR: " + ex.getMessage());
             ex.printStackTrace(System.err);

@@ -1,6 +1,6 @@
 package de.drremote.dsp408.model;
 
-import de.drremote.dsp408.util.DspProtocol;
+import de.drremote.dsp408.protocol.DspPayloads;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -116,7 +116,7 @@ public final class GuiCaptureResult {
             if (frame == null || !frame.isResponse()) {
                 continue;
             }
-            if (DspProtocol.isReadBlockResponse(frame)) {
+            if (DspPayloads.readBlockIndex(frame.payload()) != null) {
                 out.add(frame);
             }
         }
@@ -126,7 +126,7 @@ public final class GuiCaptureResult {
     public SniffedFrame readBlockResponse(int blockIndex) {
         for (int i = frames.size() - 1; i >= 0; i--) {
             SniffedFrame frame = frames.get(i);
-            Integer index = DspProtocol.readBlockIndex(frame);
+            Integer index = frame == null ? null : DspPayloads.readBlockIndex(frame.payload());
             if (index != null && index == (blockIndex & 0xFF)) {
                 return frame;
             }

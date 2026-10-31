@@ -1,7 +1,7 @@
 package de.drremote.dsp408.model;
 
-import de.drremote.dsp408.util.DspProtocol;
-import de.drremote.dsp408.util.HexUtil;
+import de.drremote.dsp408.protocol.DspPayloads;
+import de.drremote.dsp408.protocol.Hex;
 
 import java.util.Arrays;
 
@@ -15,7 +15,7 @@ public final class ProxyResponse {
         this.raw = raw == null ? new byte[0] : Arrays.copyOf(raw, raw.length);
         this.payload = payload == null ? new byte[0] : Arrays.copyOf(payload, payload.length);
         this.checksumOk = checksumOk;
-        this.command = DspProtocol.command(this.payload);
+        this.command = DspPayloads.command(this.payload);
     }
 
     public byte[] raw() {
@@ -35,23 +35,23 @@ public final class ProxyResponse {
     }
 
     public String commandHex() {
-        return DspProtocol.commandHex(command);
+        return DspPayloads.commandHex(command);
     }
 
     public Integer readBlockIndex() {
-        return DspProtocol.readBlockIndex(payload);
+        return DspPayloads.readBlockIndex(payload);
     }
 
     public String rawHex() {
-        return HexUtil.toHex(raw);
+        return Hex.bytes(raw);
     }
 
     public String payloadHex() {
-        return HexUtil.toHex(payload);
+        return Hex.bytes(payload);
     }
 
     public String payloadAscii() {
-        return HexUtil.payloadAscii(payload);
+        return Hex.ascii(payload);
     }
 
     public int rawLen() {
@@ -68,7 +68,7 @@ public final class ProxyResponse {
         sb.append("resp{");
         sb.append("cmd=").append(commandHex());
         sb.append(", len=").append(payloadLen());
-        sb.append(", hex=").append(HexUtil.toHexPreview(payload, 12));
+        sb.append(", hex=").append(Hex.preview(payload, 12));
         if (readBlockIndex() != null) {
             sb.append(", block=").append(String.format("0x%02X", readBlockIndex()));
         }

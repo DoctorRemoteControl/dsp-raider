@@ -11,6 +11,8 @@ import java.util.List;
 public final class DumpResult {
     boolean ok;
     String error;
+    String deviceVersion;
+    String deviceProfile;
 
     FrameJson handshakeInit;
     FrameJson deviceInfo;
@@ -33,6 +35,8 @@ public final class DumpResult {
         StringBuilder sb = new StringBuilder();
         sb.append("{\n");
         JsonUtil.appendField(sb, 1, "ok", ok, true);
+        if (deviceVersion != null) JsonUtil.appendField(sb, 1, "device_version", deviceVersion, true);
+        if (deviceProfile != null) JsonUtil.appendField(sb, 1, "device_profile", deviceProfile, true);
 
         sb.append(JsonUtil.indent(1)).append("\"summary\": {\n");
         JsonUtil.appendField(sb, 2, "handshake_ok", handshakeInit != null && deviceInfo != null && systemInfo != null, true);

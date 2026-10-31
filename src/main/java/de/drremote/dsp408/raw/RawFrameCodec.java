@@ -1,7 +1,6 @@
 package de.drremote.dsp408.raw;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 final class RawFrameCodec {
     private RawFrameCodec() {
@@ -83,48 +82,18 @@ final class RawFrameCodec {
     }
 
     static byte[] buildFrame(byte[] payload) {
-        byte[] frame = new byte[payload.length + 5];
-        frame[0] = 0x10;
-        frame[1] = 0x02;
-        System.arraycopy(payload, 0, frame, 2, payload.length);
-        frame[2 + payload.length] = 0x10;
-        frame[3 + payload.length] = 0x03;
-        frame[4 + payload.length] = xor(frame, 0, 4 + payload.length);
-        return frame;
+        return de.drremote.dsp408.protocol.DspFrameCodec.encode(payload);
     }
 
     static boolean isValidFrame(byte[] frame) {
-        if (frame == null || frame.length < 5) {
-            return false;
-        }
-        if ((frame[0] & 0xFF) != 0x10 || (frame[1] & 0xFF) != 0x02) {
-            return false;
-        }
-        if ((frame[frame.length - 3] & 0xFF) != 0x10 || (frame[frame.length - 2] & 0xFF) != 0x03) {
-            return false;
-        }
-        byte expected = xor(frame, 0, frame.length - 1);
-        return expected == frame[frame.length - 1];
+        return de.drremote.dsp408.protocol.DspFrameCodec.isValidFrame(frame);
     }
 
     static byte[] extractPayload(byte[] frame) {
-        if (frame == null || frame.length < 5) {
+        try {
+            return de.drremote.dsp408.protocol.DspFrameCodec.decode(frame).payload();
+        } catch (IllegalArgumentException e) {
             return new byte[0];
         }
-        if ((frame[0] & 0xFF) != 0x10 || (frame[1] & 0xFF) != 0x02) {
-            return new byte[0];
-        }
-        if ((frame[frame.length - 3] & 0xFF) != 0x10 || (frame[frame.length - 2] & 0xFF) != 0x03) {
-            return new byte[0];
-        }
-        return Arrays.copyOfRange(frame, 2, frame.length - 3);
-    }
-
-    private static byte xor(byte[] data, int startInclusive, int endExclusive) {
-        byte x = 0;
-        for (int i = startInclusive; i < endExclusive; i++) {
-            x ^= data[i];
-        }
-        return x;
     }
 }

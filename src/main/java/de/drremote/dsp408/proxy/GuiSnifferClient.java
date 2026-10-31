@@ -18,11 +18,16 @@ public final class GuiSnifferClient implements AutoCloseable {
     }
 
     public void connect() throws IOException {
+        connect(ProxyConstants.STREAM_CONNECT_TIMEOUT_MS);
+    }
+
+    public void connect(long timeoutMs) throws IOException {
         if (connected) {
             return;
         }
 
-        streamChannel.connect(ProxyConstants.STREAM_CONNECT_TIMEOUT_MS);
+        if (timeoutMs < 1 || timeoutMs > Integer.MAX_VALUE) throw new IllegalArgumentException("Invalid connection timeout");
+        streamChannel.connect(timeoutMs);
         connected = true;
     }
 

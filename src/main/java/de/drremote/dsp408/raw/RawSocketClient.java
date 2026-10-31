@@ -1,6 +1,8 @@
 package de.drremote.dsp408.raw;
 
-import java.io.ByteArrayOutputStream;
+import de.drremote.dsp408.protocol.DspFrameDecoder;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -17,6 +19,9 @@ final class RawSocketClient implements AutoCloseable {
     private final int connectTimeoutMs;
     private final int readTimeoutMs;
     private final boolean verbose;
+
+    private final DspFrameDecoder decoder = new DspFrameDecoder();
+    private final Deque<byte[]> receivedFrames = new ArrayDeque<>();
 
     private Socket socket;
     private InputStream in;
@@ -91,78 +96,24 @@ final class RawSocketClient implements AutoCloseable {
 
     private List<byte[]> readFrames(int maxFrames) throws IOException {
         List<byte[]> frames = new ArrayList<>();
-        ByteArrayOutputStream pending = new ByteArrayOutputStream();
-        byte[] buf = new byte[2048];
-
+        byte[] buffer = new byte[2048];
         while (frames.size() < maxFrames) {
+            while (!receivedFrames.isEmpty() && frames.size() < maxFrames) {
+                frames.add(receivedFrames.removeFirst());
+            }
+            if (frames.size() >= maxFrames) break;
             try {
-                int n = in.read(buf);
-                if (n < 0) {
-                    break;
-                }
-                if (n == 0) {
-                    continue;
-                }
-
-                pending.write(buf, 0, n);
-
-                if (verbose) {
-                    byte[] last = Arrays.copyOf(buf, n);
-                    System.out.println("RX raw chunk: " + RawFrameCodec.toHex(last));
-                }
-
-                extractFramesFromPending(pending, frames, maxFrames);
-
+                int n = in.read(buffer);
+                if (n < 0) break;
+                if (n == 0) continue;
+                byte[] chunk = Arrays.copyOf(buffer, n);
+                if (verbose) System.out.println("RX raw chunk: " + RawFrameCodec.toHex(chunk));
+                for (var frame : decoder.accept(chunk)) receivedFrames.addLast(frame.raw());
             } catch (SocketTimeoutException timeout) {
                 break;
             }
         }
-
         return frames;
-    }
-
-    private static void extractFramesFromPending(ByteArrayOutputStream pending, List<byte[]> outFrames, int maxFrames) {
-        byte[] data = pending.toByteArray();
-        int pos = 0;
-
-        while (outFrames.size() < maxFrames) {
-            int start = findSequence(data, pos, (byte) 0x10, (byte) 0x02);
-            if (start < 0) {
-                pos = data.length;
-                break;
-            }
-
-            if (data.length < start + 5) {
-                pos = start;
-                break;
-            }
-
-            int payloadLogicalLength = data[start + 4] & 0xFF;
-            int frameLength = payloadLogicalLength + 8;
-            int frameEnd = start + frameLength;
-            if (frameEnd > data.length) {
-                pos = start;
-                break;
-            }
-
-            byte[] frame = Arrays.copyOfRange(data, start, frameEnd);
-            outFrames.add(frame);
-            pos = frameEnd;
-        }
-
-        pending.reset();
-        if (pos < data.length) {
-            pending.write(data, pos, data.length - pos);
-        }
-    }
-
-    private static int findSequence(byte[] data, int from, byte b1, byte b2) {
-        for (int i = Math.max(0, from); i < data.length - 1; i++) {
-            if (data[i] == b1 && data[i + 1] == b2) {
-                return i;
-            }
-        }
-        return -1;
     }
 
     @Override

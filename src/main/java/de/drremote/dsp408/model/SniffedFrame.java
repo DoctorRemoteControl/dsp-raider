@@ -1,7 +1,7 @@
 package de.drremote.dsp408.model;
 
-import de.drremote.dsp408.util.DspProtocol;
-import de.drremote.dsp408.util.HexUtil;
+import de.drremote.dsp408.protocol.DspPayloads;
+import de.drremote.dsp408.protocol.Hex;
 
 import java.util.Arrays;
 
@@ -22,7 +22,7 @@ public record SniffedFrame(
         }
 
         if (command == null) {
-            command = DspProtocol.command(payload);
+            command = DspPayloads.command(payload);
         }
     }
 
@@ -37,23 +37,23 @@ public record SniffedFrame(
     }
 
     public String frameHex() {
-        return HexUtil.toHex(frame);
+        return Hex.bytes(frame);
     }
 
     public String payloadHex() {
-        return HexUtil.toHex(payload);
+        return Hex.bytes(payload);
     }
 
     public String payloadAscii() {
-        return HexUtil.payloadAscii(payload);
+        return Hex.ascii(payload);
     }
 
     public String commandHex() {
-        return DspProtocol.commandHex(command);
+        return DspPayloads.commandHex(command);
     }
 
     public Integer readBlockIndex() {
-        return DspProtocol.readBlockIndex(payload);
+        return DspPayloads.readBlockIndex(payload);
     }
 
     public boolean isWrite() {

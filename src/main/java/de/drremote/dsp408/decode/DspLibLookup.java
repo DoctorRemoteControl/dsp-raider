@@ -2,6 +2,7 @@ package de.drremote.dsp408.decode;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.drremote.dsp408.parameters.ParameterKind;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -113,7 +114,7 @@ public final class DspLibLookup {
     }
 
     public double gainDb(int raw) {
-        return raw <= 80 ? ((raw / 2.0) - 60.0) : ((raw / 10.0) - 28.0);
+        return ParameterKind.GAIN.rawToValue(raw);
     }
 
     public double matrixCrosspointGainDb(int raw) {

@@ -1,0 +1,17 @@
+{
+  "source": "Physical FIR408 at 192.168.0.166:9761 via the local decoder proxy",
+  "captured_at": "2026-10-31T20:11:25.259906+01:00",
+  "firmware": "FIR408 V0113P",
+  "requests": [
+    "0x10",
+    "0x13",
+    "0x2C",
+    "0x27"
+  ],
+  "blocks": 32,
+  "data_bytes": 1556,
+  "sha256": "4c1fab8d490c20fe988aa8193ec2b0d4169da4c030d704c02e2cf8ea38779d5b",
+  "repeat_changed_bytes": 0,
+  "editor_comparison": "Not performed: original Windows-only editor runtime not installed.",
+  "timestamp_source": "baseline-before.json completion filesystem mtime"
+}

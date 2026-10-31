@@ -8,19 +8,15 @@ public final class DspProtocol {
     }
 
     public static Integer command(byte[] payload) {
-        return payload != null && payload.length > 3 ? (payload[3] & 0xFF) : null;
+        return de.drremote.dsp408.protocol.DspPayloads.command(payload);
     }
 
     public static String commandHex(Integer command) {
-        return command == null ? "null" : String.format("0x%02X", command);
+        return de.drremote.dsp408.protocol.DspPayloads.commandHex(command);
     }
 
     public static Integer readBlockIndex(byte[] payload) {
-        Integer cmd = command(payload);
-        if (cmd == null || cmd != 0x24 || payload.length <= 4) {
-            return null;
-        }
-        return payload[4] & 0xFF;
+        return de.drremote.dsp408.protocol.DspPayloads.readBlockIndex(payload);
     }
 
     public static Integer readBlockIndex(ProxyResponse response) {

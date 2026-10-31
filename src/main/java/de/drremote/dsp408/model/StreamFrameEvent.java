@@ -1,6 +1,6 @@
 package de.drremote.dsp408.model;
 
-import de.drremote.dsp408.util.HexUtil;
+import de.drremote.dsp408.protocol.Hex;
 
 import java.io.IOException;
 
@@ -28,8 +28,8 @@ public final class StreamFrameEvent {
     }
 
     public Frame toFrame() throws IOException {
-        byte[] raw = HexUtil.hexToBytes(frameHexCompact);
-        byte[] payload = HexUtil.hexToBytes(payloadHexCompact);
+        byte[] raw = Hex.parse(frameHexCompact);
+        byte[] payload = Hex.parse(payloadHexCompact);
         return new Frame(raw, payload, true);
     }
 }

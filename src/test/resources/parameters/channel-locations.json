@@ -1,0 +1,502 @@
+{
+  "description": "Frozen JSON-pointer projection of preserved DSP408 protocol evidence; selected read nodes only, no new observations. Source paths are relative to DSP408 workspace.",
+  "created": "2026-10-31",
+  "sources": {
+    "tracks-dsp-raider/DspLib-408.json": {
+      "sha256": "d76a78486dd4a726c753e2c2fe99356d4cec95f1e9d83e283d1cc21054979a68",
+      "fragments": {
+        "/parameters/gain/read/input_locations/0": {
+          "channel": "InA",
+          "block_hex": "02",
+          "offset_dec": 53,
+          "examples": {
+            "0.0dB_raw": 280,
+            "-6.0dB_raw": 220
+          },
+          "note": "confirmed by scripted write 00 01 04 34 00 18 01 vs 00 01 04 34 00 DC 00 and direct diffReport on block 0x02",
+          "status": "observed_strong"
+        },
+        "/parameters/gain/read/input_locations/1": {
+          "channel": "InB",
+          "block_hex": "05",
+          "offset_dec": 43,
+          "examples": {
+            "0.0dB_raw": 280,
+            "-6.0dB_raw": 220
+          },
+          "note": "confirmed by scripted write 00 01 04 34 01 18 01 vs 00 01 04 34 01 DC 00 and direct diffReport on block 0x05",
+          "status": "observed_strong"
+        },
+        "/parameters/gain/read/input_locations/2": {
+          "channel": "InC",
+          "block_hex": "08",
+          "offset_dec": 33,
+          "examples": {
+            "0.0dB_raw": 280,
+            "-6.0dB_raw": 220
+          },
+          "note": "confirmed by scripted write 00 01 04 34 02 18 01 vs 00 01 04 34 02 DC 00 and direct diffReport on block 0x08",
+          "status": "observed_strong"
+        },
+        "/parameters/gain/read/input_locations/3": {
+          "channel": "InD",
+          "block_hex": "0B",
+          "offset_dec": 23,
+          "examples": {
+            "0.0dB_raw": 280,
+            "-6.0dB_raw": 220
+          },
+          "note": "confirmed by scripted write 00 01 04 34 03 18 01 vs 00 01 04 34 03 DC 00 and direct diffReport on block 0x0B",
+          "status": "observed_strong"
+        },
+        "/parameters/gain/read/output_locations/0": {
+          "channel": "Out1",
+          "block_hex": "0D",
+          "offset_dec": 27
+        },
+        "/parameters/gain/read/output_locations/1": {
+          "channel": "Out2",
+          "block_hex": "0F",
+          "offset_dec": 31
+        },
+        "/parameters/gain/read/output_locations/2": {
+          "channel": "Out3",
+          "block_hex": "11",
+          "offset_dec": 35
+        },
+        "/parameters/gain/read/output_locations/3": {
+          "channel": "Out4",
+          "block_hex": "13",
+          "offset_dec": 39
+        },
+        "/parameters/gain/read/output_locations/4": {
+          "channel": "Out5",
+          "block_hex": "15",
+          "offset_dec": 43
+        },
+        "/parameters/gain/read/output_locations/5": {
+          "channel": "Out6",
+          "block_hex": "17",
+          "offset_dec": 47
+        },
+        "/parameters/gain/read/output_locations/6": {
+          "channel": "Out7",
+          "block_hex": "19",
+          "offset_dec": 51
+        },
+        "/parameters/gain/read/output_locations/7": {
+          "channel": "Out8",
+          "block_hex": "1C",
+          "offset_dec": 5
+        },
+        "/parameters/delay/read/full_channel_read_map/channels/InA": {
+          "block_hex": "03",
+          "offset_dec": 7,
+          "basis": "observed by automated delay read hypothesis test: writing InA from 0.0 ms to 20.0 ms changed only block 0x03 offsets 7..8; also matches gain@02:53 and phase@03:5 adjacency",
+          "status": "observed_strong"
+        },
+        "/parameters/delay/read/full_channel_read_map/channels/InB": {
+          "block_hex": "05",
+          "offset_dec": 47,
+          "basis": "predicted from InB gain@05:43 and phase@05:45",
+          "status": "predicted_strong"
+        },
+        "/parameters/delay/read/full_channel_read_map/channels/InC": {
+          "block_hex": "08",
+          "offset_dec": 37,
+          "basis": "predicted from InC gain@08:33 and phase@08:35",
+          "status": "predicted_strong"
+        },
+        "/parameters/delay/read/full_channel_read_map/channels/InD": {
+          "block_hex": "0B",
+          "offset_dec": 27,
+          "basis": "observed by automated delay read hypothesis test: writing InD from 0.0 ms to 20.0 ms changed only block 0x0B offsets 27..28; also matches gain@0B:23 and phase@0B:25 adjacency",
+          "status": "observed_strong"
+        },
+        "/parameters/delay/read/full_channel_read_map/channels/Out1": {
+          "block_hex": "0D",
+          "offset_dec": 31,
+          "basis": "already observed in block dump",
+          "status": "observed_strong"
+        },
+        "/parameters/delay/read/full_channel_read_map/channels/Out2": {
+          "block_hex": "0F",
+          "offset_dec": 35,
+          "basis": "already observed in block dump",
+          "status": "observed_strong"
+        },
+        "/parameters/delay/read/full_channel_read_map/channels/Out3": {
+          "block_hex": "11",
+          "offset_dec": 39,
+          "basis": "already observed in block dump",
+          "status": "observed_strong"
+        },
+        "/parameters/delay/read/full_channel_read_map/channels/Out4": {
+          "block_hex": "13",
+          "offset_dec": 43,
+          "basis": "already observed in block dump",
+          "status": "observed_strong"
+        },
+        "/parameters/delay/read/full_channel_read_map/channels/Out5": {
+          "block_hex": "15",
+          "offset_dec": 47,
+          "basis": "already observed in block dump",
+          "status": "observed_strong"
+        },
+        "/parameters/delay/read/full_channel_read_map/channels/Out6": {
+          "block_hex": "17",
+          "offset_dec": 51,
+          "basis": "already observed in block dump",
+          "status": "observed_strong"
+        },
+        "/parameters/delay/read/full_channel_read_map/channels/Out7": {
+          "block_hex": "1A",
+          "offset_dec": 5,
+          "basis": "already observed in block dump",
+          "status": "observed_strong"
+        },
+        "/parameters/delay/read/full_channel_read_map/channels/Out8": {
+          "block_hex": "1C",
+          "offset_dec": 9,
+          "basis": "already observed in block dump",
+          "status": "observed_strong"
+        },
+        "/parameters/mute/read/inputs": {
+          "storage": "block_dump",
+          "block_hex": "1C",
+          "offset_dec": 13,
+          "encoding": "bitmask",
+          "bit_mapping": {
+            "InA": "0x01",
+            "InB": "0x02",
+            "InC": "0x04",
+            "InD": "0x08"
+          },
+          "observations": [
+            {
+              "channel": "InA",
+              "unmute_raw": 0,
+              "mute_raw": 1,
+              "note": "confirmed by scripted write 00 01 03 35 00 00 vs 00 01 03 35 00 01 and direct diffReport on block 0x1C"
+            },
+            {
+              "channel": "InB",
+              "before_raw": 1,
+              "after_raw": 3,
+              "note": "confirmed by scripted write 00 01 03 35 01 00 vs 00 01 03 35 01 01; bit 0x02 toggles for InB"
+            },
+            {
+              "channel": "InC",
+              "before_raw": 3,
+              "after_raw": 7,
+              "note": "confirmed by scripted write 00 01 03 35 02 00 vs 00 01 03 35 02 01; bit 0x04 toggles for InC"
+            },
+            {
+              "channel": "InD",
+              "before_raw": 7,
+              "after_raw": 15,
+              "note": "confirmed by scripted write 00 01 03 35 03 00 vs 00 01 03 35 03 01; bit 0x08 toggles for InD"
+            }
+          ],
+          "status": "observed_strong"
+        },
+        "/parameters/mute/read/outputs": {
+          "storage": "block_dump",
+          "block_hex": "1C",
+          "offset_dec": 15,
+          "encoding": "bitmask",
+          "examples": {
+            "Out1": "0x01",
+            "Out2": "0x02",
+            "Out3": "0x04",
+            "Out4": "0x08",
+            "Out1_plus_Out2": "0x03",
+            "Out2_plus_Out3": "0x06"
+          }
+        }
+      }
+    },
+    "tracks-dsp-raider/DspLib-408-fir.json": {
+      "sha256": "d84e6696908a4f479a8851252b95289c3f19e206c097c2da139ba6b12e9585be",
+      "fragments": {
+        "/parameters/gain/read/input_locations/0": {
+          "channel": "InA",
+          "block_hex": "02",
+          "offset_dec": 51,
+          "examples": {
+            "0.0dB_raw": 280,
+            "-6.0dB_raw": 220
+          },
+          "note": "2026-07-16 live FIR408 marker write confirmed data offset 46 (payload offset 51); gain is at input record offset 130",
+          "status": "verified_live_fir408_2026_07_16"
+        },
+        "/parameters/gain/read/input_locations/1": {
+          "channel": "InB",
+          "block_hex": "05",
+          "offset_dec": 39,
+          "examples": {
+            "0.0dB_raw": 280,
+            "-6.0dB_raw": 220
+          },
+          "note": "derived from the observed 138-byte FIR408 input record stride and gain record offset 130",
+          "status": "verified_live_fir408_2026_07_16"
+        },
+        "/parameters/gain/read/input_locations/2": {
+          "channel": "InC",
+          "block_hex": "08",
+          "offset_dec": 27,
+          "examples": {
+            "0.0dB_raw": 280,
+            "-6.0dB_raw": 220
+          },
+          "note": "derived from the observed 138-byte FIR408 input record stride and gain record offset 130",
+          "status": "verified_live_fir408_2026_07_16"
+        },
+        "/parameters/gain/read/input_locations/3": {
+          "channel": "InD",
+          "block_hex": "0B",
+          "offset_dec": 15,
+          "examples": {
+            "0.0dB_raw": 280,
+            "-6.0dB_raw": 220
+          },
+          "note": "2026-07-16 live FIR408 marker write confirmed data offset 10 (payload offset 15); gain is at input record offset 130",
+          "status": "verified_live_fir408_2026_07_16"
+        },
+        "/parameters/gain/read/output_locations/0": {
+          "channel": "Out1",
+          "block_hex": "0D",
+          "offset_dec": 23
+        },
+        "/parameters/gain/read/output_locations/1": {
+          "channel": "Out2",
+          "block_hex": "0F",
+          "offset_dec": 31
+        },
+        "/parameters/gain/read/output_locations/2": {
+          "channel": "Out3",
+          "block_hex": "11",
+          "offset_dec": 39
+        },
+        "/parameters/gain/read/output_locations/3": {
+          "channel": "Out4",
+          "block_hex": "13",
+          "offset_dec": 47
+        },
+        "/parameters/gain/read/output_locations/4": {
+          "channel": "Out5",
+          "block_hex": "16",
+          "offset_dec": 5
+        },
+        "/parameters/gain/read/output_locations/5": {
+          "channel": "Out6",
+          "block_hex": "18",
+          "offset_dec": 13
+        },
+        "/parameters/gain/read/output_locations/6": {
+          "channel": "Out7",
+          "block_hex": "1A",
+          "offset_dec": 21
+        },
+        "/parameters/gain/read/output_locations/7": {
+          "channel": "Out8",
+          "block_hex": "1C",
+          "offset_dec": 29
+        },
+        "/parameters/delay/read/full_channel_read_map/channels/InA": {
+          "channel_hex": "0x00",
+          "block_hex": "0x03",
+          "offset_dec": 5,
+          "offset_hex": "0x05",
+          "confirmed_20ms_changed_offsets": [
+            5,
+            6
+          ],
+          "status": "observed"
+        },
+        "/parameters/delay/read/full_channel_read_map/channels/InB": {
+          "channel_hex": "0x01",
+          "block_hex": "0x05",
+          "offset_dec": 43,
+          "offset_hex": "0x2B",
+          "confirmed_20ms_changed_offsets": [
+            43,
+            44
+          ],
+          "status": "observed"
+        },
+        "/parameters/delay/read/full_channel_read_map/channels/InC": {
+          "channel_hex": "0x02",
+          "block_hex": "0x08",
+          "offset_dec": 31,
+          "offset_hex": "0x1F",
+          "confirmed_20ms_changed_offsets": [
+            31,
+            32
+          ],
+          "status": "observed"
+        },
+        "/parameters/delay/read/full_channel_read_map/channels/InD": {
+          "channel_hex": "0x03",
+          "block_hex": "0x0B",
+          "offset_dec": 19,
+          "offset_hex": "0x13",
+          "confirmed_20ms_changed_offsets": [
+            19,
+            20
+          ],
+          "status": "observed"
+        },
+        "/parameters/delay/read/full_channel_read_map/channels/Out1": {
+          "channel_hex": "0x04",
+          "block_hex": "0x0D",
+          "offset_dec": 27,
+          "offset_hex": "0x1B",
+          "confirmed_20ms_changed_offsets": [
+            27,
+            28
+          ],
+          "status": "observed"
+        },
+        "/parameters/delay/read/full_channel_read_map/channels/Out2": {
+          "channel_hex": "0x05",
+          "block_hex": "0x0F",
+          "offset_dec": 35,
+          "offset_hex": "0x23",
+          "confirmed_20ms_changed_offsets": [
+            35,
+            36
+          ],
+          "status": "observed"
+        },
+        "/parameters/delay/read/full_channel_read_map/channels/Out3": {
+          "channel_hex": "0x06",
+          "block_hex": "0x11",
+          "offset_dec": 43,
+          "offset_hex": "0x2B",
+          "confirmed_20ms_changed_offsets": [
+            43,
+            44
+          ],
+          "status": "observed"
+        },
+        "/parameters/delay/read/full_channel_read_map/channels/Out4": {
+          "channel_hex": "0x07",
+          "block_hex": "0x13",
+          "offset_dec": 51,
+          "offset_hex": "0x33",
+          "confirmed_20ms_changed_offsets": [
+            51,
+            52
+          ],
+          "status": "observed"
+        },
+        "/parameters/delay/read/full_channel_read_map/channels/Out5": {
+          "channel_hex": "0x08",
+          "block_hex": "0x16",
+          "offset_dec": 9,
+          "offset_hex": "0x09",
+          "confirmed_20ms_changed_offsets": [
+            9,
+            10
+          ],
+          "status": "observed"
+        },
+        "/parameters/delay/read/full_channel_read_map/channels/Out6": {
+          "channel_hex": "0x09",
+          "block_hex": "0x18",
+          "offset_dec": 17,
+          "offset_hex": "0x11",
+          "confirmed_20ms_changed_offsets": [
+            17,
+            18
+          ],
+          "status": "observed"
+        },
+        "/parameters/delay/read/full_channel_read_map/channels/Out7": {
+          "channel_hex": "0x0A",
+          "block_hex": "0x1A",
+          "offset_dec": 25,
+          "offset_hex": "0x19",
+          "confirmed_20ms_changed_offsets": [
+            25,
+            26
+          ],
+          "status": "observed"
+        },
+        "/parameters/delay/read/full_channel_read_map/channels/Out8": {
+          "channel_hex": "0x0B",
+          "block_hex": "0x1C",
+          "offset_dec": 33,
+          "offset_hex": "0x21",
+          "confirmed_20ms_changed_offsets": [
+            33,
+            34
+          ],
+          "status": "observed"
+        }
+      }
+    },
+    "DSP408Controller/dsp408-parent/docs/protocol-spec/DspLib-408-fir.json": {
+      "sha256": "86d92ea1a8c15fbd434a447ba16dc2ee556bbbaacf860f44712300e8331c584e",
+      "fragments": {
+        "/parameters/mute/read/inputs": {
+          "storage": "block_dump",
+          "block_hex": "1C",
+          "offset_dec": 37,
+          "encoding": "bitmask",
+          "bit_mapping": {
+            "InA": "0x01",
+            "InB": "0x02",
+            "InC": "0x04",
+            "InD": "0x08"
+          },
+          "observations": [
+            {
+              "channel": "InA",
+              "unmute_raw": 0,
+              "mute_raw": 1,
+              "note": "confirmed by scripted write 00 01 03 35 00 00 vs 00 01 03 35 00 01 and direct diffReport on block 0x1C"
+            },
+            {
+              "channel": "InB",
+              "before_raw": 1,
+              "after_raw": 3,
+              "note": "confirmed by scripted write 00 01 03 35 01 00 vs 00 01 03 35 01 01; bit 0x02 toggles for InB"
+            },
+            {
+              "channel": "InC",
+              "before_raw": 3,
+              "after_raw": 7,
+              "note": "confirmed by scripted write 00 01 03 35 02 00 vs 00 01 03 35 02 01; bit 0x04 toggles for InC"
+            },
+            {
+              "channel": "InD",
+              "before_raw": 6,
+              "after_raw": 14,
+              "note": "2026-08-06 live FIR408 readback confirmed payload offset 37 (block data offset 32); bit 0x08 toggles for InD and was restored"
+            }
+          ],
+          "status": "predicted_from_dsp408"
+        },
+        "/parameters/mute/read/outputs": {
+          "storage": "block_dump",
+          "block_hex": "1C",
+          "offset_dec": 39,
+          "encoding": "bitmask",
+          "examples": {
+            "Out1": "0x01",
+            "Out2": "0x02",
+            "Out3": "0x04",
+            "Out4": "0x08",
+            "Out1_plus_Out2": "0x03",
+            "Out2_plus_Out3": "0x06",
+            "Out8_live_unmuted": "0x08",
+            "Out8_live_muted": "0x88"
+          },
+          "note": "2026-08-06 live FIR408 readback confirmed payload offset 39 (block data offset 34); Out8 toggled bit 0x80 and was restored."
+        }
+      }
+    }
+  }
+}

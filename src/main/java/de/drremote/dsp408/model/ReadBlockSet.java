@@ -1,7 +1,7 @@
 package de.drremote.dsp408.model;
 
-import de.drremote.dsp408.util.DspProtocol;
-import de.drremote.dsp408.util.HexUtil;
+import de.drremote.dsp408.protocol.DspPayloads;
+import de.drremote.dsp408.protocol.Hex;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -65,7 +65,7 @@ public final class ReadBlockSet {
     }
 
     public String dataHex() {
-        return HexUtil.toHex(data());
+        return Hex.bytes(data());
     }
 
     public String allBlocksHex() {
@@ -97,9 +97,9 @@ public final class ReadBlockSet {
     private static boolean isReadBlockPayload(byte[] payload) {
         return payload != null
                 && payload.length >= 5
-                && DspProtocol.command(payload) != null
-                && DspProtocol.command(payload) == 0x24
-                && DspProtocol.readBlockIndex(payload) != null;
+                && DspPayloads.command(payload) != null
+                && DspPayloads.command(payload) == 0x24
+                && DspPayloads.readBlockIndex(payload) != null;
     }
 
     @Override

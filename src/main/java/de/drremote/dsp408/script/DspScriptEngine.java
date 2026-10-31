@@ -3,6 +3,9 @@ package de.drremote.dsp408.script;
 import de.drremote.dsp408.model.ProxyStatus;
 import de.drremote.dsp408.model.GuiCaptureResult;
 import de.drremote.dsp408.model.SniffedFrame;
+import de.drremote.dsp408.session.DspSessionFactory;
+import de.drremote.dsp408.proxy.ProxyClient;
+import de.drremote.dsp408.proxy.ProxyConfig;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -19,6 +22,7 @@ public final class DspScriptEngine {
     private final String defaultControlHost;
     private final int defaultControlPort;
     private final boolean verbose;
+    private final DspSessionFactory sessionFactory;
 
     public DspScriptEngine(
             String defaultStreamHost,
@@ -27,11 +31,20 @@ public final class DspScriptEngine {
             int defaultControlPort,
             boolean verbose
     ) {
+        this(defaultStreamHost, defaultStreamPort, defaultControlHost, defaultControlPort, verbose,
+                (streamHost, streamPort, controlHost, controlPort, logging) ->
+                        new ProxyClient(ProxyConfig.of(streamHost, streamPort, controlHost, controlPort, null, logging)));
+    }
+
+    public DspScriptEngine(String defaultStreamHost, int defaultStreamPort,
+                           String defaultControlHost, int defaultControlPort,
+                           boolean verbose, DspSessionFactory sessionFactory) {
         this.defaultStreamHost = Objects.requireNonNull(defaultStreamHost);
         this.defaultStreamPort = defaultStreamPort;
         this.defaultControlHost = Objects.requireNonNull(defaultControlHost);
         this.defaultControlPort = defaultControlPort;
         this.verbose = verbose;
+        this.sessionFactory = Objects.requireNonNull(sessionFactory);
     }
 
     public void execute(Path scriptPath) throws Exception {
@@ -57,15 +70,14 @@ public final class DspScriptEngine {
                 defaultStreamPort,
                 defaultControlHost,
                 defaultControlPort,
-                verbose
+                verbose,
+                sessionFactory
         );
         ScriptValueResolver resolver = new ScriptValueResolver(state);
         ScriptFunctions functions = new ScriptFunctions(state, resolver);
 
-        try {
+        try (state) {
             executeBlock(lines, 0, lines.size(), state, resolver, functions);
-        } finally {
-            state.closeAll();
         }
     }
 

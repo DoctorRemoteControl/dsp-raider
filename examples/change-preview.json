@@ -1,0 +1,10 @@
+{
+  "device_version": "FIR408 V0113P",
+  "changes": [
+    { "channel": "Out2", "parameter": "gain", "value": -3.04 },
+    { "channel": "Out8", "parameter": "delay", "value": 20.004 },
+    { "channel": "InD", "parameter": "mute", "value": true },
+    { "channel": "InA", "parameter": "mute", "value": true },
+    { "channel": "Out3", "parameter": "gain", "value": -6 }
+  ]
+}

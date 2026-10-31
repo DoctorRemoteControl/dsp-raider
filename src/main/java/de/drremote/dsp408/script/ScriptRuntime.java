@@ -2,14 +2,15 @@ package de.drremote.dsp408.script;
 
 import de.drremote.dsp408.model.GuiCaptureResult;
 import de.drremote.dsp408.proxy.GuiSnifferClient;
-import de.drremote.dsp408.proxy.ProxyClient;
-import de.drremote.dsp408.proxy.ProxyConfig;
+import de.drremote.dsp408.session.DspSession;
+import de.drremote.dsp408.session.DspSessionFactory;
 
 import java.io.InputStream;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
-final class ScriptRuntime {
+final class ScriptRuntime implements AutoCloseable {
     final String defaultStreamHost;
     final int defaultStreamPort;
     final String defaultControlHost;
@@ -18,7 +19,8 @@ final class ScriptRuntime {
 
     final Map<String, Object> variables = new LinkedHashMap<>();
 
-    private ProxyClient client;
+    private DspSession client;
+    private final DspSessionFactory sessionFactory;
     private GuiSnifferClient guiSniffer;
 
     ScriptRuntime(
@@ -26,20 +28,29 @@ final class ScriptRuntime {
             int defaultStreamPort,
             String defaultControlHost,
             int defaultControlPort,
-            boolean verbose
+            boolean verbose,
+            DspSessionFactory sessionFactory
     ) {
         this.defaultStreamHost = defaultStreamHost;
         this.defaultStreamPort = defaultStreamPort;
         this.defaultControlHost = defaultControlHost;
         this.defaultControlPort = defaultControlPort;
         this.verbose = verbose;
+        this.sessionFactory = Objects.requireNonNull(sessionFactory);
     }
 
     void connect(String streamHost, int streamPort, String controlHost, int controlPort) throws Exception {
         closeClient();
-        ProxyConfig config = ProxyConfig.of(streamHost, streamPort, controlHost, controlPort, null, verbose);
-        client = new ProxyClient(config);
-        client.connect();
+        DspSession candidate = Objects.requireNonNull(
+                sessionFactory.create(streamHost, streamPort, controlHost, controlPort, verbose));
+        try {
+            candidate.connect();
+            client = candidate;
+        } catch (Exception | Error failure) {
+            try { candidate.close(); }
+            catch (Exception | Error cleanup) { failure.addSuppressed(cleanup); }
+            throw failure;
+        }
     }
 
     void connectGuiSniffer(String streamHost, int streamPort) throws Exception {
@@ -48,7 +59,7 @@ final class ScriptRuntime {
         guiSniffer.connect();
     }
 
-    ProxyClient requireClient() {
+    DspSession requireClient() {
         if (client == null) {
             throw new IllegalStateException("No proxy connection active. The script must run 'connect' first.");
         }
@@ -126,15 +137,17 @@ final class ScriptRuntime {
 
     void closeClient() throws Exception {
         if (client != null) {
-            client.close();
+            DspSession current = client;
             client = null;
+            current.close();
         }
     }
 
     void closeGuiSniffer() throws Exception {
         if (guiSniffer != null) {
-            guiSniffer.close();
+            GuiSnifferClient current = guiSniffer;
             guiSniffer = null;
+            current.close();
         }
     }
 
@@ -161,4 +174,6 @@ final class ScriptRuntime {
             throw first;
         }
     }
+
+    @Override public void close() throws Exception { closeAll(); }
 }
