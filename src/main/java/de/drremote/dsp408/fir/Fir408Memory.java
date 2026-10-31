@@ -277,7 +277,7 @@ public final class Fir408Memory {
     }
 
     private static String formatDb(double value) {
-        if(!Double.isFinite(value))return "unbekannt (ungültiger Rohwert)";
+        if(!Double.isFinite(value))return "unknown (invalid raw value)";
         return String.format(Locale.ROOT, "%+.1fdB", value);
     }
 

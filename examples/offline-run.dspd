@@ -1,0 +1,8 @@
+// Fully offline execution: no session, file writes, sleeps or interactive pauses.
+let message = "checked DSPD execution";
+print(message);
+for (let channel in 0..3) {
+    assert($_ == channel);
+    print("input=${channel}");
+}
+assert(not false and startsWith(message, "checked"));

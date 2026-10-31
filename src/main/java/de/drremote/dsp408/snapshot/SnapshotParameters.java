@@ -17,16 +17,16 @@ final class SnapshotParameters {
 
     static String describe(Snapshot snapshot) {
         var profile=ParameterProfiles.forVersion(snapshot.identity().version());
-        if(profile.isEmpty())return "Kein bestätigtes Parameterprofil für diese Firmware; Werte unbekannt.\n\n";
+        if(profile.isEmpty())return "No confirmed parameter profile for this firmware; values unknown.\n\n";
         StringBuilder report=new StringBuilder("## Gain / Mute / Delay\n\n")
-                .append("CONFIRMED = belegte Zuordnung; INFERRED = unbestätigter Kandidat; UNKNOWN = fehlend; INVALID = ungültiger Rohwert.\n")
-                .append("Offsets beziehen sich auf Blockdaten ohne den 5-Byte-Antwortheader. Mute-Rohwerte zeigen das gesamte Maskenbyte.\n\n")
-                .append("| Kanal | Parameter | Wert | Status | Rohwert | Leseposition | Schreibbefehl | Lesenachweis |\n")
+                .append("CONFIRMED = proven mapping; INFERRED = unconfirmed candidate; UNKNOWN = missing; INVALID = invalid raw value.\n")
+                .append("Offsets refer to block data excluding the 5-byte response header. Mute raw values show the entire mask byte.\n\n")
+                .append("| Channel | Parameter | Value | Status | Raw value | Read position | Write command | Read evidence |\n")
                 .append("| --- | --- | --- | --- | --- | --- | --- | --- |\n");
         for(var value:profile.get().values(snapshot.blockData())) {
             var definition=value.definition();
             var location=definition.readLocation();
-            String position=location==null ? "unbekannt" : "0x%02X+0x%02X/%d%s".formatted(
+            String position=location==null ? "unknown" : "0x%02X+0x%02X/%d%s".formatted(
                     location.block(),location.dataOffset(),location.width(),
                     location.mask()==0 ? "" : " mask=0x%02X".formatted(location.mask()));
             report.append("| %s | %s | %s | %s | %s | %s | 0x%02X | %s (%s) |\n".formatted(
@@ -42,7 +42,7 @@ final class SnapshotParameters {
         var rightProfile=ParameterProfiles.forVersion(after.identity().version());
         BlockData left=before.blockData(),right=after.blockData();
         Map<Integer,Integer> coverage=new HashMap<>();
-        StringBuilder report=new StringBuilder("\nParameteränderungen (Gain/Mute/Delay):\n");
+        StringBuilder report=new StringBuilder("\nParameter changes (Gain/Mute/Delay):\n");
         int changed=0;
         if(leftProfile.isPresent() && rightProfile.isPresent()
                 && leftProfile.get().version().equals(rightProfile.get().version())) {
@@ -63,9 +63,9 @@ final class SnapshotParameters {
                 }
             }
         } else {
-            report.append("Kein gemeinsames bestätigtes Parameterprofil; keine semantische Zuordnung.\n");
+            report.append("No shared confirmed parameter profile; no semantic mapping.\n");
         }
-        report.append("parameter_changes=%d\n\nNicht zugeordnete Rohänderungen (außerhalb bestätigter Gain/Mute/Delay-Felder):\n".formatted(changed));
+        report.append("parameter_changes=%d\n\nUnmapped raw changes (outside confirmed Gain/Mute/Delay fields):\n".formatted(changed));
         int unmapped=0;
         var indices=new TreeSet<>(before.blocks().keySet());indices.addAll(after.blocks().keySet());
         for(int block:indices) {
@@ -80,7 +80,7 @@ final class SnapshotParameters {
                 unmapped++;
             }
         }
-        return report.append("unmapped_bytes=%d\n\nRohvergleich (alle Änderungen):\n".formatted(unmapped)).toString();
+        return report.append("unmapped_bytes=%d\n\nRaw comparison (all changes):\n".formatted(unmapped)).toString();
     }
 
     private static int key(int block,int offset) { return block*256+offset; }

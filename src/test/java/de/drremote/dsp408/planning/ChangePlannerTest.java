@@ -81,9 +81,9 @@ class ChangePlannerTest {
                 new ChangeRequest("FIR408 V0115",List.of(new ParameterChange(5,ParameterKind.GAIN,-3))));
         assertEquals(1,unknown.blockedCount());assertEquals("",unknown.entries().getFirst().payloadHex());
         String report=ChangePlanReport.text(unknown);
-        assertTrue(report.contains("Rohwert Speicher: unbekannt"),report);
-        assertTrue(report.contains("Lesenachweis: unbekannt"),report);
-        assertTrue(report.contains("Schreibnachweis: unbekannt"),report);
+        assertTrue(report.contains("Storage raw value: unknown"),report);
+        assertTrue(report.contains("Read evidence: unknown"),report);
+        assertTrue(report.contains("Write evidence: unknown"),report);
         var dsp=ChangePlanner.plan("DSP408 V0104",BlockData.of(reference()),
                 new ChangeRequest("DSP408 V0104",List.of(new ParameterChange(1,ParameterKind.DELAY,20))));
         assertEquals(1,dsp.blockedCount());assertEquals("",dsp.entries().getFirst().payloadHex());

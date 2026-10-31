@@ -20,7 +20,7 @@ public final class ChangePlanner {
         var entries = new ArrayList<ChangePlan.Entry>();
         for (var change : request.changes()) {
             if (profile.isEmpty()) {
-                entries.add(new ChangePlan.Entry(change, null, ChangePlan.Status.BLOCKED, "Kein bestätigtes Parameterprofil für diese Firmware"));
+                entries.add(new ChangePlan.Entry(change, null, ChangePlan.Status.BLOCKED, "No confirmed parameter profile for this firmware"));
                 continue;
             }
             var definition = profile.get().definition(change.channelIndex(), change.kind());
@@ -28,11 +28,11 @@ public final class ChangePlanner {
             if (before.status() != ParameterValue.Status.CONFIRMED) {
                 entries.add(new ChangePlan.Entry(change, before, ChangePlan.Status.BLOCKED, before.status() + ": " + before.detail()));
             } else if (definition.writeEvidence().level() != Evidence.Level.CONFIRMED) {
-                entries.add(new ChangePlan.Entry(change, before, ChangePlan.Status.BLOCKED, "Unbestätigte Schreibzuordnung"));
+                entries.add(new ChangePlan.Entry(change, before, ChangePlan.Status.BLOCKED, "Unconfirmed write mapping"));
             } else if (change.kind().valueToRaw(before.value()) == change.writeRaw()) {
-                entries.add(new ChangePlan.Entry(change, before, ChangePlan.Status.UNCHANGED, "Darstellbarer Zielwert entspricht dem Ausgangswert"));
+                entries.add(new ChangePlan.Entry(change, before, ChangePlan.Status.UNCHANGED, "Representable target value matches the starting value"));
             } else {
-                entries.add(new ChangePlan.Entry(change, before, ChangePlan.Status.READY, "Bestätigter Ausgangswert und belegtes Schreibformat"));
+                entries.add(new ChangePlan.Entry(change, before, ChangePlan.Status.READY, "Confirmed starting value and proven write format"));
             }
         }
         return new ChangePlan(version, entries);

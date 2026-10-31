@@ -46,8 +46,8 @@ class SnapshotParametersTest {
         var before=reference();
         var after=edit(before,28,34,0x81); // confirmed Out8, inferred Out1
         String diff=SnapshotAnalysis.diff(before,after);
-        assertTrue(diff.contains("Out8 Mute: AUS -> AN"),diff);
-        assertFalse(diff.contains("Out1 Mute: AUS -> AN"),diff);
+        assertTrue(diff.contains("Out8 Mute: OFF -> ON"),diff);
+        assertFalse(diff.contains("Out1 Mute: OFF -> ON"),diff);
         assertTrue(diff.contains("unmapped block 0x1C offset 0x0022 mask 0x01"),diff);
         assertTrue(diff.contains("unmapped_bytes=1"),diff);
     }
@@ -55,7 +55,7 @@ class SnapshotParametersTest {
     @Test void inferredInputMuteStaysUnknownAndRawChangeRemainsVisible() throws Exception {
         var before=reference();var after=edit(before,28,32,1);
         String diff=SnapshotAnalysis.diff(before,after);
-        assertFalse(diff.contains("InA Mute: AUS -> AN"),diff);
+        assertFalse(diff.contains("InA Mute: OFF -> ON"),diff);
         assertTrue(diff.contains("unmapped block 0x1C offset 0x0020 mask 0x01"),diff);
         assertTrue(SnapshotAnalysis.decode(after).contains("INFERRED"));
     }
@@ -63,7 +63,7 @@ class SnapshotParametersTest {
     @Test void invalidValueIsNotPresentedAsConfirmedOrConsumedByCoverage() throws Exception {
         var before=reference();var after=edit(before,13,18,255,255);
         String diff=SnapshotAnalysis.diff(before,after);
-        assertTrue(diff.contains("Out1 Gain: -1.0 dB -> unbekannt"),diff);
+        assertTrue(diff.contains("Out1 Gain: -1.0 dB -> unknown"),diff);
         assertTrue(diff.contains("unmapped_bytes=2"),diff);
         String decoded=SnapshotAnalysis.decode(after);
         assertTrue(decoded.contains("INVALID"),decoded);
@@ -73,11 +73,11 @@ class SnapshotParametersTest {
     @Test void missingBlockAndUnknownFirmwareCannotProduceConfirmedValues() throws Exception {
         var before=reference();var blocks=new TreeMap<>(before.blocks());blocks.remove(13);
         String missing=SnapshotAnalysis.diff(before,new Snapshot(before.identity(),blocks));
-        assertTrue(missing.contains("Out1 Gain: -1.0 dB -> unbekannt"),missing);
+        assertTrue(missing.contains("Out1 Gain: -1.0 dB -> unknown"),missing);
         assertTrue(missing.contains("removed block 0x0D"),missing);
         var unknown=new Snapshot(new DeviceIdentity("FIR408","FIR408 V0115",31),before.blocks());
         String decoded=SnapshotAnalysis.decode(unknown);
-        assertTrue(decoded.contains("Kein bestätigtes Parameterprofil"),decoded);
+        assertTrue(decoded.contains("No confirmed parameter profile"),decoded);
         assertFalse(decoded.contains("FIR408 DSPD Static Decode"),decoded);
         assertFalse(SnapshotAnalysis.diff(before,unknown).contains("Out1 Gain:"));
     }

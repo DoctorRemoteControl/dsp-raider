@@ -32,8 +32,8 @@ class ParameterKindTest {
         assertArrayEquals(new byte[]{0,1,3,0x35,3,1},ParameterKind.MUTE.writePayload(3,1));
         assertEquals("-6.0 dB",ParameterKind.GAIN.format(-6));
         assertEquals("20.000 ms",ParameterKind.DELAY.format(20));
-        assertEquals("AN",ParameterKind.MUTE.format(1));
-        assertEquals("AUS",ParameterKind.MUTE.format(0));
+        assertEquals("ON",ParameterKind.MUTE.format(1));
+        assertEquals("OFF",ParameterKind.MUTE.format(0));
     }
 
     @Test void invalidRawAndEngineeringValuesAreNeverClamped() {

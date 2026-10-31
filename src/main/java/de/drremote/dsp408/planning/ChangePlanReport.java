@@ -11,22 +11,22 @@ public final class ChangePlanReport {
     private ChangePlanReport() { }
 
     public static String text(ChangePlan plan) {
-        var report = new StringBuilder("DSP Raider Änderungsvorschau\nGerät: ")
-                .append(plan.deviceVersion()).append("\nVorschau – keine Übertragung.\n\n");
+        var report = new StringBuilder("DSP Raider change preview\nDevice: ")
+                .append(plan.deviceVersion()).append("\nPreview – no transmission.\n\n");
         for (var entry : plan.entries()) {
             var change = entry.change();
-            String before = entry.before() == null ? "unbekannt" : entry.before().display();
+            String before = entry.before() == null ? "unknown" : entry.before().display();
             report.append("%s %s [%s]: %s -> %s\n".formatted(change.channel(), change.kind().label(), entry.status(), before,
                     change.kind().format(change.targetValue())));
             String requested = change.kind() == ParameterKind.MUTE ? change.kind().format(change.value())
                     : Double.toString(change.value()) + " " + change.kind().unit();
-            report.append("  angefragt: %s; darstellbar: %s; Rundung: %s\n".formatted(requested,
-                    change.kind().format(change.targetValue()), rounded(change) ? "ja" : "nein"));
+            report.append("  requested: %s; representable: %s; rounded: %s\n".formatted(requested,
+                    change.kind().format(change.targetValue()), rounded(change) ? "yes" : "no"));
             report.append("  ").append(entry.reason()).append('\n');
             var reading = entry.before();
-            report.append("  Rohwert Speicher: ").append(reading == null || reading.raw() == null ? "unbekannt" : reading.raw()).append('\n');
-            report.append("  Lesenachweis: ").append(reading == null ? "unbekannt" : evidence(reading.definition().readEvidence())).append('\n');
-            report.append("  Schreibnachweis: ").append(reading == null ? "unbekannt" : evidence(reading.definition().writeEvidence())).append('\n');
+            report.append("  Storage raw value: ").append(reading == null || reading.raw() == null ? "unknown" : reading.raw()).append('\n');
+            report.append("  Read evidence: ").append(reading == null ? "unknown" : evidence(reading.definition().readEvidence())).append('\n');
+            report.append("  Write evidence: ").append(reading == null ? "unknown" : evidence(reading.definition().writeEvidence())).append('\n');
             if (!entry.payloadHex().isEmpty()) report.append("  payload: ").append(entry.payloadHex()).append('\n');
         }
         return report.append("\nready=%d unchanged=%d blocked=%d\n".formatted(plan.readyCount(), plan.unchangedCount(), plan.blockedCount())).toString();

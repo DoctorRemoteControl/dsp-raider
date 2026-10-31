@@ -497,8 +497,13 @@ final class ScriptFunctions {
     private Object evaluateCallExpression(List<String> tokens) throws Exception {
         String name = normalizeFunctionName(tokens.get(0));
         int close = findMatchingParenIndex(tokens, 1);
-        List<List<String>> args = splitArguments(tokens, 2, close);
+        List<ScriptArgument> args = splitArguments(tokens, 2, close).stream()
+                .map(argument -> (ScriptArgument) () -> evaluateExpression(argument)).toList();
+        return invoke(name, args);
+    }
 
+    Object invoke(String name, List<ScriptArgument> args) throws Exception {
+        name = normalizeFunctionName(name);
         return switch (name) {
             case "status" -> {
                 requireCallArgCount(name, args, 0);
@@ -510,10 +515,10 @@ final class ScriptFunctions {
                     yield "connected";
                 }
                 if (args.size() == 4) {
-                    String streamHost = ScriptValueResolver.stringify(evaluateExpression(args.get(0)));
-                    int streamPort = ScriptValueResolver.toInt(evaluateExpression(args.get(1)));
-                    String controlHost = ScriptValueResolver.stringify(evaluateExpression(args.get(2)));
-                    int controlPort = ScriptValueResolver.toInt(evaluateExpression(args.get(3)));
+                    String streamHost = ScriptValueResolver.stringify(args.get(0).evaluate());
+                    int streamPort = ScriptValueResolver.toInt(args.get(1).evaluate());
+                    String controlHost = ScriptValueResolver.stringify(args.get(2).evaluate());
+                    int controlPort = ScriptValueResolver.toInt(args.get(3).evaluate());
                     state.connect(streamHost, streamPort, controlHost, controlPort);
                     yield "connected";
                 }
@@ -532,8 +537,8 @@ final class ScriptFunctions {
                     yield "gui-connected";
                 }
                 if (args.size() == 2) {
-                    String streamHost = ScriptValueResolver.stringify(evaluateExpression(args.get(0)));
-                    int streamPort = ScriptValueResolver.toInt(evaluateExpression(args.get(1)));
+                    String streamHost = ScriptValueResolver.stringify(args.get(0).evaluate());
+                    int streamPort = ScriptValueResolver.toInt(args.get(1).evaluate());
                     state.connectGuiSniffer(streamHost, streamPort);
                     yield "gui-connected";
                 }
@@ -568,7 +573,7 @@ final class ScriptFunctions {
             }
             case "sleep" -> {
                 requireCallArgCount(name, args, 1);
-                long ms = ScriptValueResolver.toLong(evaluateExpression(args.get(0)));
+                long ms = ScriptValueResolver.toLong(args.get(0).evaluate());
                 Thread.sleep(ms);
                 yield ms;
             }
@@ -577,16 +582,16 @@ final class ScriptFunctions {
                     throw new IllegalArgumentException("pause() expects 0 or 1 argument.");
                 }
                 String note = args.size() == 1
-                        ? ScriptValueResolver.stringify(evaluateExpression(args.get(0)))
+                        ? ScriptValueResolver.stringify(args.get(0).evaluate())
                         : null;
                 state.pauseForUser(note);
                 yield "continued";
             }
             case "save-text" -> {
                 requireCallArgCount(name, args, 2);
-                String pathText = ScriptValueResolver.stringify(evaluateExpression(args.get(0)));
+                String pathText = ScriptValueResolver.stringify(args.get(0).evaluate());
                 Path path = Path.of(pathText);
-                Object value = evaluateExpression(args.get(1));
+                Object value = args.get(1).evaluate();
                 String text = ScriptValueResolver.stringify(value);
                 Path parent = path.toAbsolutePath().getParent();
                 if (parent != null) {
@@ -597,11 +602,11 @@ final class ScriptFunctions {
             }
             case "save-capture-read-blocks" -> {
                 requireCallArgCount(name, args, 2);
-                Object captureValue = evaluateExpression(args.get(0));
+                Object captureValue = args.get(0).evaluate();
                 if (!(captureValue instanceof GuiCaptureResult capture)) {
                     throw new IllegalArgumentException("First argument is not a GuiCaptureResult.");
                 }
-                Path dir = Path.of(ScriptValueResolver.stringify(evaluateExpression(args.get(1))));
+                Path dir = Path.of(ScriptValueResolver.stringify(args.get(1).evaluate()));
                 Files.createDirectories(dir.toAbsolutePath());
                 int saved = 0;
                 for (SniffedFrame frame : capture.readBlockResponses()) {
@@ -619,28 +624,28 @@ final class ScriptFunctions {
             }
             case "save-diff-report" -> {
                 requireCallArgCount(name, args, 3);
-                String pathText = ScriptValueResolver.stringify(evaluateExpression(args.get(0)));
-                byte[] before = ScriptValueResolver.toBytes(evaluateExpression(args.get(1)));
-                byte[] after = ScriptValueResolver.toBytes(evaluateExpression(args.get(2)));
+                String pathText = ScriptValueResolver.stringify(args.get(0).evaluate());
+                byte[] before = ScriptValueResolver.toBytes(args.get(1).evaluate());
+                byte[] after = ScriptValueResolver.toBytes(args.get(2).evaluate());
                 yield saveDiffReport(pathText, before, after);
             }
             case "save-read-blocks" -> {
                 requireCallArgCount(name, args, 2);
-                Object blocks = evaluateExpression(args.get(0));
-                String dir = ScriptValueResolver.stringify(evaluateExpression(args.get(1)));
+                Object blocks = args.get(0).evaluate();
+                String dir = ScriptValueResolver.stringify(args.get(1).evaluate());
                 yield saveReadBlocks(blocks, dir);
             }
             case "assembled-data" -> {
                 requireCallArgCount(name, args, 1);
-                yield assembledData(evaluateExpression(args.get(0)));
+                yield assembledData(args.get(0).evaluate());
             }
             case "decode-fir408-config" -> {
                 requireCallArgCount(name, args, 1);
-                yield decodeFir408Config(evaluateExpression(args.get(0)));
+                yield decodeFir408Config(args.get(0).evaluate());
             }
             case "fir408-safe-pings" -> {
                 requireCallArgCount(name, args, 1);
-                yield fir408SafePings(evaluateExpression(args.get(0)));
+                yield fir408SafePings(args.get(0).evaluate());
             }
             case "fir408-cmd56-readonly-sweep" -> {
                 if (args.size() != 1 && args.size() != 6) {
@@ -650,12 +655,12 @@ final class ScriptFunctions {
                                     + "fir408Cmd56ReadonlySweep(dir, selectorStart, selectorEnd, offsetStart, offsetEnd, step)"
                     );
                 }
-                String dir = ScriptValueResolver.stringify(evaluateExpression(args.get(0)));
-                int selectorStart = args.size() == 6 ? ScriptValueResolver.toInt(evaluateExpression(args.get(1))) : 0x00;
-                int selectorEnd = args.size() == 6 ? ScriptValueResolver.toInt(evaluateExpression(args.get(2))) : 0x03;
-                int offsetStart = args.size() == 6 ? ScriptValueResolver.toInt(evaluateExpression(args.get(3))) : 0;
-                int offsetEnd = args.size() == 6 ? ScriptValueResolver.toInt(evaluateExpression(args.get(4))) : 511;
-                int step = args.size() == 6 ? ScriptValueResolver.toInt(evaluateExpression(args.get(5))) : 13;
+                String dir = ScriptValueResolver.stringify(args.get(0).evaluate());
+                int selectorStart = args.size() == 6 ? ScriptValueResolver.toInt(args.get(1).evaluate()) : 0x00;
+                int selectorEnd = args.size() == 6 ? ScriptValueResolver.toInt(args.get(2).evaluate()) : 0x03;
+                int offsetStart = args.size() == 6 ? ScriptValueResolver.toInt(args.get(3).evaluate()) : 0;
+                int offsetEnd = args.size() == 6 ? ScriptValueResolver.toInt(args.get(4).evaluate()) : 511;
+                int step = args.size() == 6 ? ScriptValueResolver.toInt(args.get(5).evaluate()) : 13;
                 yield fir408Cmd56ReadonlySweep(dir, selectorStart, selectorEnd, offsetStart, offsetEnd, step);
             }
             case "fir408-cmd56-readonly-offsets" -> {
@@ -665,10 +670,10 @@ final class ScriptFunctions {
                                     + "fir408Cmd56ReadonlyOffsets(dir, selector, offsets, [attempts])"
                     );
                 }
-                String dir = ScriptValueResolver.stringify(evaluateExpression(args.get(0)));
-                int selector = ScriptValueResolver.toInt(evaluateExpression(args.get(1)));
-                String offsets = ScriptValueResolver.stringify(evaluateExpression(args.get(2)));
-                int attempts = args.size() == 4 ? ScriptValueResolver.toInt(evaluateExpression(args.get(3))) : 1;
+                String dir = ScriptValueResolver.stringify(args.get(0).evaluate());
+                int selector = ScriptValueResolver.toInt(args.get(1).evaluate());
+                String offsets = ScriptValueResolver.stringify(args.get(2).evaluate());
+                int attempts = args.size() == 4 ? ScriptValueResolver.toInt(args.get(3).evaluate()) : 1;
                 yield fir408Cmd56ReadonlyOffsets(dir, selector, offsets, attempts);
             }
             case "fir408-upload-test-fir" -> {
@@ -677,10 +682,10 @@ final class ScriptFunctions {
                             "Invalid fir408UploadTestFir syntax. Expected: fir408UploadTestFir(selector, pattern, [name8])"
                     );
                 }
-                int selector = ScriptValueResolver.toInt(evaluateExpression(args.get(0)));
-                String pattern = ScriptValueResolver.stringify(evaluateExpression(args.get(1)));
+                int selector = ScriptValueResolver.toInt(args.get(0).evaluate());
+                String pattern = ScriptValueResolver.stringify(args.get(1).evaluate());
                 String name8 = args.size() >= 3
-                        ? ScriptValueResolver.stringify(evaluateExpression(args.get(2)))
+                        ? ScriptValueResolver.stringify(args.get(2).evaluate())
                         : Fir408TestFilter.defaultName(pattern);
                 yield fir408UploadTestFir(selector, pattern, name8);
             }
@@ -690,8 +695,8 @@ final class ScriptFunctions {
                     yield "ok";
                 }
                 if (args.size() == 2) {
-                    long timeoutMs = ScriptValueResolver.toLong(evaluateExpression(args.get(0)));
-                    long pollMs = ScriptValueResolver.toLong(evaluateExpression(args.get(1)));
+                    long timeoutMs = ScriptValueResolver.toLong(args.get(0).evaluate());
+                    long pollMs = ScriptValueResolver.toLong(args.get(1).evaluate());
                     state.requireClient().attachSession(timeoutMs, pollMs);
                     yield "ok";
                 }
@@ -704,10 +709,10 @@ final class ScriptFunctions {
                     throw new IllegalArgumentException("reconnectSession() expects 0..2 numeric arguments.");
                 }
                 long timeoutMs = args.size() >= 1
-                        ? ScriptValueResolver.toLong(evaluateExpression(args.get(0)))
+                        ? ScriptValueResolver.toLong(args.get(0).evaluate())
                         : 120000L;
                 long pollMs = args.size() >= 2
-                        ? ScriptValueResolver.toLong(evaluateExpression(args.get(1)))
+                        ? ScriptValueResolver.toLong(args.get(1).evaluate())
                         : 250L;
                 state.reconnectSession(timeoutMs, pollMs);
                 yield "reconnected";
@@ -717,7 +722,7 @@ final class ScriptFunctions {
                     throw new IllegalArgumentException("pauseForUser() expects 0 or 1 argument.");
                 }
                 String note = args.size() == 1
-                        ? ScriptValueResolver.stringify(evaluateExpression(args.get(0)))
+                        ? ScriptValueResolver.stringify(args.get(0).evaluate())
                         : null;
                 state.pauseForUser(note);
                 yield "ok";
@@ -737,19 +742,19 @@ final class ScriptFunctions {
             case "login" -> {
                 requireCallArgCount(name, args, 1);
                 yield state.requireClient().login(
-                        ScriptValueResolver.stringify(evaluateExpression(args.get(0)))
+                        ScriptValueResolver.stringify(args.get(0).evaluate())
                 );
             }
             case "read-block" -> {
                 requireCallArgCount(name, args, 1);
                 yield state.requireClient().readBlock(
-                        ScriptValueResolver.toInt(evaluateExpression(args.get(0)))
+                        ScriptValueResolver.toInt(args.get(0).evaluate())
                 );
             }
             case "read-blocks" -> {
                 requireCallArgCount(name, args, 2);
-                int start = ScriptValueResolver.toInt(evaluateExpression(args.get(0)));
-                int end = ScriptValueResolver.toInt(evaluateExpression(args.get(1)));
+                int start = ScriptValueResolver.toInt(args.get(0).evaluate());
+                int end = ScriptValueResolver.toInt(args.get(1).evaluate());
                 yield readBlocks(start, end);
             }
             case "read-config-blocks" -> {
@@ -759,10 +764,10 @@ final class ScriptFunctions {
                 int start = 0x00;
                 int end = 0x1F;
                 if (args.size() == 1) {
-                    end = ScriptValueResolver.toInt(evaluateExpression(args.get(0)));
+                    end = ScriptValueResolver.toInt(args.get(0).evaluate());
                 } else if (args.size() == 2) {
-                    start = ScriptValueResolver.toInt(evaluateExpression(args.get(0)));
-                    end = ScriptValueResolver.toInt(evaluateExpression(args.get(1)));
+                    start = ScriptValueResolver.toInt(args.get(0).evaluate());
+                    end = ScriptValueResolver.toInt(args.get(1).evaluate());
                 }
                 yield readBlocks(start, end);
             }
@@ -770,14 +775,14 @@ final class ScriptFunctions {
                 if (args.isEmpty() || args.size() > 3) {
                     throw new IllegalArgumentException("Invalid readSaveConfig syntax. Expected: readSaveConfig(dir, [end]) or readSaveConfig(dir, start, end)");
                 }
-                String dir = ScriptValueResolver.stringify(evaluateExpression(args.get(0)));
+                String dir = ScriptValueResolver.stringify(args.get(0).evaluate());
                 int start = 0x00;
                 int end = 0x1F;
                 if (args.size() == 2) {
-                    end = ScriptValueResolver.toInt(evaluateExpression(args.get(1)));
+                    end = ScriptValueResolver.toInt(args.get(1).evaluate());
                 } else if (args.size() == 3) {
-                    start = ScriptValueResolver.toInt(evaluateExpression(args.get(1)));
-                    end = ScriptValueResolver.toInt(evaluateExpression(args.get(2)));
+                    start = ScriptValueResolver.toInt(args.get(1).evaluate());
+                    end = ScriptValueResolver.toInt(args.get(2).evaluate());
                 }
                 ReadBlockSet blocks = readBlocks(start, end);
                 saveReadBlocks(blocks, dir);
@@ -785,57 +790,57 @@ final class ScriptFunctions {
             }
             case "read-block-index" -> {
                 requireCallArgCount(name, args, 1);
-                yield readBlockIndexOf(evaluateExpression(args.get(0)));
+                yield readBlockIndexOf(args.get(0).evaluate());
             }
             case "read-block-payload" -> {
                 requireCallArgCount(name, args, 2);
-                GuiCaptureResult capture = requireCapture(evaluateExpression(args.get(0)));
-                int block = ScriptValueResolver.toInt(evaluateExpression(args.get(1)));
+                GuiCaptureResult capture = requireCapture(args.get(0).evaluate());
+                int block = ScriptValueResolver.toInt(args.get(1).evaluate());
                 SniffedFrame frame = capture.readBlockResponse(block);
                 yield frame == null ? null : frame.payload();
             }
             case "cmd" -> {
                 requireCallArgCount(name, args, 1);
-                yield commandOf(evaluateExpression(args.get(0)));
+                yield commandOf(args.get(0).evaluate());
             }
             case "payload" -> {
                 requireCallArgCount(name, args, 1);
-                yield payloadOf(evaluateExpression(args.get(0)));
+                yield payloadOf(args.get(0).evaluate());
             }
             case "raw" -> {
                 requireCallArgCount(name, args, 1);
-                yield rawOf(evaluateExpression(args.get(0)));
+                yield rawOf(args.get(0).evaluate());
             }
             case "payload-hex" -> {
                 requireCallArgCount(name, args, 1);
-                yield HexUtil.toHex(payloadOf(evaluateExpression(args.get(0))));
+                yield HexUtil.toHex(payloadOf(args.get(0).evaluate()));
             }
             case "payload-ascii" -> {
                 requireCallArgCount(name, args, 1);
-                yield HexUtil.payloadAscii(payloadOf(evaluateExpression(args.get(0))));
+                yield HexUtil.payloadAscii(payloadOf(args.get(0).evaluate()));
             }
             case "diff-bytes" -> {
                 requireCallArgCount(name, args, 2);
-                byte[] before = ScriptValueResolver.toBytes(evaluateExpression(args.get(0)));
-                byte[] after = ScriptValueResolver.toBytes(evaluateExpression(args.get(1)));
+                byte[] before = ScriptValueResolver.toBytes(args.get(0).evaluate());
+                byte[] after = ScriptValueResolver.toBytes(args.get(1).evaluate());
                 yield DumpDiffUtil.formatByteDiffs(before, after);
             }
             case "diff-u16le" -> {
                 requireCallArgCount(name, args, 2);
-                byte[] before = ScriptValueResolver.toBytes(evaluateExpression(args.get(0)));
-                byte[] after = ScriptValueResolver.toBytes(evaluateExpression(args.get(1)));
+                byte[] before = ScriptValueResolver.toBytes(args.get(0).evaluate());
+                byte[] after = ScriptValueResolver.toBytes(args.get(1).evaluate());
                 yield DumpDiffUtil.formatU16Diffs(before, after);
             }
             case "diff-report" -> {
                 requireCallArgCount(name, args, 2);
-                byte[] before = ScriptValueResolver.toBytes(evaluateExpression(args.get(0)));
-                byte[] after = ScriptValueResolver.toBytes(evaluateExpression(args.get(1)));
+                byte[] before = ScriptValueResolver.toBytes(args.get(0).evaluate());
+                byte[] after = ScriptValueResolver.toBytes(args.get(1).evaluate());
                 yield DumpDiffUtil.formatDiffReport(before, after);
             }
             case "changed-offsets" -> {
                 requireCallArgCount(name, args, 2);
-                byte[] before = ScriptValueResolver.toBytes(evaluateExpression(args.get(0)));
-                byte[] after = ScriptValueResolver.toBytes(evaluateExpression(args.get(1)));
+                byte[] before = ScriptValueResolver.toBytes(args.get(0).evaluate());
+                byte[] after = ScriptValueResolver.toBytes(args.get(1).evaluate());
                 yield changedOffsets(before, after);
             }
             case "send-payload", "tx", "write" -> evaluateCallSendPayload(args, state.requireClient());
@@ -854,84 +859,84 @@ final class ScriptFunctions {
                     );
                 }
                 long quietMs = args.size() >= 1
-                        ? ScriptValueResolver.toLong(evaluateExpression(args.get(0)))
+                        ? ScriptValueResolver.toLong(args.get(0).evaluate())
                         : 350L;
                 long maxWaitMs = args.size() >= 2
-                        ? ScriptValueResolver.toLong(evaluateExpression(args.get(1)))
+                        ? ScriptValueResolver.toLong(args.get(1).evaluate())
                         : 3000L;
                 yield state.finishGuiCapture(quietMs, maxWaitMs);
             }
 
             case "capture-count" -> {
                 requireCallArgCount(name, args, 1);
-                yield requireCapture(evaluateExpression(args.get(0))).totalFrames();
+                yield requireCapture(args.get(0).evaluate()).totalFrames();
             }
             case "capture-write-count" -> {
                 requireCallArgCount(name, args, 1);
-                yield requireCapture(evaluateExpression(args.get(0))).writeCount();
+                yield requireCapture(args.get(0).evaluate()).writeCount();
             }
             case "capture-response-count" -> {
                 requireCallArgCount(name, args, 1);
-                yield requireCapture(evaluateExpression(args.get(0))).responseCount();
+                yield requireCapture(args.get(0).evaluate()).responseCount();
             }
             case "capture-frame" -> {
                 requireCallArgCount(name, args, 2);
-                GuiCaptureResult capture = requireCapture(evaluateExpression(args.get(0)));
-                int index = ScriptValueResolver.toInt(evaluateExpression(args.get(1)));
+                GuiCaptureResult capture = requireCapture(args.get(0).evaluate());
+                int index = ScriptValueResolver.toInt(args.get(1).evaluate());
                 yield capture.frame(index);
             }
             case "first-write" -> {
                 requireCallArgCount(name, args, 1);
-                yield requireCapture(evaluateExpression(args.get(0))).firstWrite();
+                yield requireCapture(args.get(0).evaluate()).firstWrite();
             }
             case "last-write" -> {
                 requireCallArgCount(name, args, 1);
-                yield requireCapture(evaluateExpression(args.get(0))).lastWrite();
+                yield requireCapture(args.get(0).evaluate()).lastWrite();
             }
             case "first-response" -> {
                 requireCallArgCount(name, args, 1);
-                yield requireCapture(evaluateExpression(args.get(0))).firstResponse();
+                yield requireCapture(args.get(0).evaluate()).firstResponse();
             }
             case "last-response" -> {
                 requireCallArgCount(name, args, 1);
-                yield requireCapture(evaluateExpression(args.get(0))).lastResponse();
+                yield requireCapture(args.get(0).evaluate()).lastResponse();
             }
             case "last-write-excluding" -> {
                 if (args.isEmpty()) {
                     throw new IllegalArgumentException("Too few arguments. Expected: last-write-excluding(<capture>, [cmd...])");
                 }
-                GuiCaptureResult capture = requireCapture(evaluateExpression(args.get(0)));
+                GuiCaptureResult capture = requireCapture(args.get(0).evaluate());
                 yield capture.lastWriteExcluding(parseCommandsFromArgLists(args, 1));
             }
             case "writes-by-command" -> {
                 requireCallArgCount(name, args, 2);
-                GuiCaptureResult capture = requireCapture(evaluateExpression(args.get(0)));
-                int command = ScriptValueResolver.toInt(evaluateExpression(args.get(1)));
+                GuiCaptureResult capture = requireCapture(args.get(0).evaluate());
+                int command = ScriptValueResolver.toInt(args.get(1).evaluate());
                 yield writesByCommand(capture, command);
             }
             case "frames-by-command" -> {
                 requireCallArgCount(name, args, 2);
-                GuiCaptureResult capture = requireCapture(evaluateExpression(args.get(0)));
-                int command = ScriptValueResolver.toInt(evaluateExpression(args.get(1)));
+                GuiCaptureResult capture = requireCapture(args.get(0).evaluate());
+                int command = ScriptValueResolver.toInt(args.get(1).evaluate());
                 yield framesByCommand(capture, command);
             }
             case "responses-by-command" -> {
                 requireCallArgCount(name, args, 2);
-                GuiCaptureResult capture = requireCapture(evaluateExpression(args.get(0)));
-                int command = ScriptValueResolver.toInt(evaluateExpression(args.get(1)));
+                GuiCaptureResult capture = requireCapture(args.get(0).evaluate());
+                int command = ScriptValueResolver.toInt(args.get(1).evaluate());
                 yield responsesByCommand(capture, command);
             }
             case "writes-by-command-and-channel" -> {
                 requireCallArgCount(name, args, 3);
-                GuiCaptureResult capture = requireCapture(evaluateExpression(args.get(0)));
-                int command = ScriptValueResolver.toInt(evaluateExpression(args.get(1)));
-                int channel = ScriptValueResolver.toInt(evaluateExpression(args.get(2)));
+                GuiCaptureResult capture = requireCapture(args.get(0).evaluate());
+                int command = ScriptValueResolver.toInt(args.get(1).evaluate());
+                int channel = ScriptValueResolver.toInt(args.get(2).evaluate());
                 yield writesByCommandAndChannel(capture, command, channel);
             }
             case "recent-writes" -> {
                 requireCallArgCount(name, args, 2);
-                GuiCaptureResult capture = requireCapture(evaluateExpression(args.get(0)));
-                int limit = ScriptValueResolver.toInt(evaluateExpression(args.get(1)));
+                GuiCaptureResult capture = requireCapture(args.get(0).evaluate());
+                int limit = ScriptValueResolver.toInt(args.get(1).evaluate());
                 yield capture.recentWrites(limit);
             }
             case "recent-writes-excluding" -> {
@@ -940,130 +945,130 @@ final class ScriptFunctions {
                             "Too few arguments. Expected: recent-writes-excluding(<capture>, <limit>, [cmd...])"
                     );
                 }
-                GuiCaptureResult capture = requireCapture(evaluateExpression(args.get(0)));
-                int limit = ScriptValueResolver.toInt(evaluateExpression(args.get(1)));
+                GuiCaptureResult capture = requireCapture(args.get(0).evaluate());
+                int limit = ScriptValueResolver.toInt(args.get(1).evaluate());
                 yield capture.recentWritesExcluding(limit, parseCommandsFromArgLists(args, 2));
             }
             case "writes" -> {
                 requireCallArgCount(name, args, 1);
-                yield requireCapture(evaluateExpression(args.get(0))).writes();
+                yield requireCapture(args.get(0).evaluate()).writes();
             }
             case "responses" -> {
                 requireCallArgCount(name, args, 1);
-                yield requireCapture(evaluateExpression(args.get(0))).responses();
+                yield requireCapture(args.get(0).evaluate()).responses();
             }
             case "payload-series" -> {
                 requireCallArgCount(name, args, 1);
-                yield payloadSeries(evaluateExpression(args.get(0)));
+                yield payloadSeries(args.get(0).evaluate());
             }
             case "u16-series" -> {
                 requireCallArgCount(name, args, 2);
-                Object frames = evaluateExpression(args.get(0));
-                int offset = ScriptValueResolver.toInt(evaluateExpression(args.get(1)));
+                Object frames = args.get(0).evaluate();
+                int offset = ScriptValueResolver.toInt(args.get(1).evaluate());
                 yield u16Series(frames, offset);
             }
             case "changing-offsets-across-writes" -> {
                 requireCallArgCount(name, args, 1);
-                yield changingOffsetsAcrossWrites(evaluateExpression(args.get(0)));
+                yield changingOffsetsAcrossWrites(args.get(0).evaluate());
             }
 
             case "len" -> {
                 requireCallArgCount(name, args, 1);
-                yield lengthOf(evaluateExpression(args.get(0)));
+                yield lengthOf(args.get(0).evaluate());
             }
             case "contains" -> {
                 requireCallArgCount(name, args, 2);
-                yield contains(evaluateExpression(args.get(0)), evaluateExpression(args.get(1)));
+                yield contains(args.get(0).evaluate(), args.get(1).evaluate());
             }
             case "starts-with" -> {
                 requireCallArgCount(name, args, 2);
-                yield startsWith(evaluateExpression(args.get(0)), evaluateExpression(args.get(1)));
+                yield startsWith(args.get(0).evaluate(), args.get(1).evaluate());
             }
             case "ends-with" -> {
                 requireCallArgCount(name, args, 2);
-                yield endsWith(evaluateExpression(args.get(0)), evaluateExpression(args.get(1)));
+                yield endsWith(args.get(0).evaluate(), args.get(1).evaluate());
             }
             case "upper" -> {
                 requireCallArgCount(name, args, 1);
-                yield ScriptValueResolver.stringify(evaluateExpression(args.get(0))).toUpperCase(Locale.ROOT);
+                yield ScriptValueResolver.stringify(args.get(0).evaluate()).toUpperCase(Locale.ROOT);
             }
             case "lower" -> {
                 requireCallArgCount(name, args, 1);
-                yield ScriptValueResolver.stringify(evaluateExpression(args.get(0))).toLowerCase(Locale.ROOT);
+                yield ScriptValueResolver.stringify(args.get(0).evaluate()).toLowerCase(Locale.ROOT);
             }
             case "trim" -> {
                 requireCallArgCount(name, args, 1);
-                yield ScriptValueResolver.stringify(evaluateExpression(args.get(0))).trim();
+                yield ScriptValueResolver.stringify(args.get(0).evaluate()).trim();
             }
             case "join" -> {
                 if (args.isEmpty() || args.size() > 2) {
                     throw new IllegalArgumentException("Invalid join syntax. Expected: join(<list>, [separator])");
                 }
-                Object value = evaluateExpression(args.get(0));
+                Object value = args.get(0).evaluate();
                 String separator = args.size() >= 2
-                        ? ScriptValueResolver.stringify(evaluateExpression(args.get(1)))
+                        ? ScriptValueResolver.stringify(args.get(1).evaluate())
                         : ", ";
                 yield join(value, separator);
             }
             case "at" -> {
                 requireCallArgCount(name, args, 2);
-                Object value = evaluateExpression(args.get(0));
-                int index = ScriptValueResolver.toInt(evaluateExpression(args.get(1)));
+                Object value = args.get(0).evaluate();
+                int index = ScriptValueResolver.toInt(args.get(1).evaluate());
                 yield at(value, index);
             }
             case "split" -> {
                 requireCallArgCount(name, args, 2);
-                String text = ScriptValueResolver.stringify(evaluateExpression(args.get(0)));
-                String separator = ScriptValueResolver.stringify(evaluateExpression(args.get(1)));
+                String text = ScriptValueResolver.stringify(args.get(0).evaluate());
+                String separator = ScriptValueResolver.stringify(args.get(1).evaluate());
                 yield split(text, separator);
             }
             case "replace" -> {
                 requireCallArgCount(name, args, 3);
-                String text = ScriptValueResolver.stringify(evaluateExpression(args.get(0)));
-                String search = ScriptValueResolver.stringify(evaluateExpression(args.get(1)));
-                String replacement = ScriptValueResolver.stringify(evaluateExpression(args.get(2)));
+                String text = ScriptValueResolver.stringify(args.get(0).evaluate());
+                String search = ScriptValueResolver.stringify(args.get(1).evaluate());
+                String replacement = ScriptValueResolver.stringify(args.get(2).evaluate());
                 yield text.replace(search, replacement);
             }
 
             case "u8" -> {
                 requireCallArgCount(name, args, 2);
-                byte[] bytes = ScriptValueResolver.toBytes(evaluateExpression(args.get(0)));
-                int offset = ScriptValueResolver.toInt(evaluateExpression(args.get(1)));
+                byte[] bytes = ScriptValueResolver.toBytes(args.get(0).evaluate());
+                int offset = ScriptValueResolver.toInt(args.get(1).evaluate());
                 yield DumpByteReaders.u8(bytes, offset);
             }
             case "u16le" -> {
                 requireCallArgCount(name, args, 2);
-                byte[] bytes = ScriptValueResolver.toBytes(evaluateExpression(args.get(0)));
-                int offset = ScriptValueResolver.toInt(evaluateExpression(args.get(1)));
+                byte[] bytes = ScriptValueResolver.toBytes(args.get(0).evaluate());
+                int offset = ScriptValueResolver.toInt(args.get(1).evaluate());
                 yield DumpByteReaders.u16le(bytes, offset);
             }
             case "u32le" -> {
                 requireCallArgCount(name, args, 2);
-                byte[] bytes = ScriptValueResolver.toBytes(evaluateExpression(args.get(0)));
-                int offset = ScriptValueResolver.toInt(evaluateExpression(args.get(1)));
+                byte[] bytes = ScriptValueResolver.toBytes(args.get(0).evaluate());
+                int offset = ScriptValueResolver.toInt(args.get(1).evaluate());
                 yield DumpByteReaders.u32le(bytes, offset);
             }
             case "ascii" -> {
                 if (args.size() < 3 || args.size() > 4) {
                     throw new IllegalArgumentException("Invalid ascii syntax. Expected: ascii(<bytes>, <offset>, <len>, [trimzero])");
                 }
-                byte[] bytes = ScriptValueResolver.toBytes(evaluateExpression(args.get(0)));
-                int offset = ScriptValueResolver.toInt(evaluateExpression(args.get(1)));
-                int length = ScriptValueResolver.toInt(evaluateExpression(args.get(2)));
-                boolean trimZero = args.size() >= 4 && truthy(evaluateExpression(args.get(3)));
+                byte[] bytes = ScriptValueResolver.toBytes(args.get(0).evaluate());
+                int offset = ScriptValueResolver.toInt(args.get(1).evaluate());
+                int length = ScriptValueResolver.toInt(args.get(2).evaluate());
+                boolean trimZero = args.size() >= 4 && truthy(args.get(3).evaluate());
                 yield DumpByteReaders.ascii(bytes, offset, length, trimZero);
             }
             case "hex" -> evaluateCallHex(args);
             case "slice" -> {
                 requireCallArgCount(name, args, 3);
-                byte[] bytes = ScriptValueResolver.toBytes(evaluateExpression(args.get(0)));
-                int offset = ScriptValueResolver.toInt(evaluateExpression(args.get(1)));
-                int length = ScriptValueResolver.toInt(evaluateExpression(args.get(2)));
+                byte[] bytes = ScriptValueResolver.toBytes(args.get(0).evaluate());
+                int offset = ScriptValueResolver.toInt(args.get(1).evaluate());
+                int length = ScriptValueResolver.toInt(args.get(2).evaluate());
                 yield DumpByteReaders.slice(bytes, offset, length);
             }
             case "bytes" -> {
                 requireCallArgCount(name, args, 1);
-                Object value = evaluateExpression(args.get(0));
+                Object value = args.get(0).evaluate();
                 yield toBytesFlexible(value);
             }
 
@@ -1112,17 +1117,17 @@ final class ScriptFunctions {
         return client.sendPayload(payload, expectedCommand, strict, "script_send_payload");
     }
 
-    private ProxyResponse evaluateCallSendPayload(List<List<String>> args, DspSession client) throws Exception {
+    private ProxyResponse evaluateCallSendPayload(List<ScriptArgument> args, DspSession client) throws Exception {
         if (args.isEmpty() || args.size() > 2) {
             throw new IllegalArgumentException("Invalid write syntax. Expected: write(<payload>, [expectedCommand])");
         }
 
-        byte[] payload = toBytesFlexible(evaluateExpression(args.get(0)));
+        byte[] payload = toBytesFlexible(args.get(0).evaluate());
         Integer expectedCommand = null;
         boolean strict = false;
 
         if (args.size() >= 2) {
-            expectedCommand = ScriptValueResolver.toInt(evaluateExpression(args.get(1)));
+            expectedCommand = ScriptValueResolver.toInt(args.get(1).evaluate());
             strict = true;
         }
 
@@ -1143,7 +1148,7 @@ final class ScriptFunctions {
         return state.finishGuiCapture(options.quietMs(), options.maxWaitMs());
     }
 
-    private GuiCaptureResult evaluateCallGuiCapture(List<List<String>> args) throws Exception {
+    private GuiCaptureResult evaluateCallGuiCapture(List<ScriptArgument> args) throws Exception {
         if (args.size() > 4) {
             throw new IllegalArgumentException(
                     "Invalid gui-capture syntax. Expected: gui-capture([actionWindowMs], [quietMs], [maxWaitMs])"
@@ -1169,7 +1174,7 @@ final class ScriptFunctions {
         return state.captureGuiAction(options.actionWindowMs(), options.quietMs(), options.maxWaitMs(), 0x40);
     }
 
-    private GuiCaptureResult evaluateCallGuiActionCapture(List<List<String>> args) throws Exception {
+    private GuiCaptureResult evaluateCallGuiActionCapture(List<ScriptArgument> args) throws Exception {
         if (args.size() > 4) {
             throw new IllegalArgumentException(
                     "Invalid gui-action-capture syntax. Expected: gui-action-capture([actionWindowMs], [quietMs], [maxWaitMs])"
@@ -1212,15 +1217,15 @@ final class ScriptFunctions {
         return new CaptureWindowOptions(note, actionWindowMs, quietMs, maxWaitMs);
     }
 
-    private CaptureWindowOptions parseCaptureWindowCallOptions(List<List<String>> args) throws Exception {
+    private CaptureWindowOptions parseCaptureWindowCallOptions(List<ScriptArgument> args) throws Exception {
         long actionWindowMs = 15000L;
         long quietMs = 1500L;
         long maxWaitMs = 12000L;
         String note = null;
 
         int numericIndex = 0;
-        for (List<String> arg : args) {
-            Object value = evaluateExpression(arg);
+        for (ScriptArgument arg : args) {
+            Object value = arg.evaluate();
             if (value instanceof Number number) {
                 long numericValue = number.longValue();
                 if (numericIndex == 0) {
@@ -1280,16 +1285,16 @@ final class ScriptFunctions {
         return DumpByteReaders.hex(bytes, offset, length);
     }
 
-    private Object evaluateCallHex(List<List<String>> args) throws Exception {
+    private Object evaluateCallHex(List<ScriptArgument> args) throws Exception {
         if (args.size() == 1) {
-            byte[] bytes = ScriptValueResolver.toBytes(evaluateExpression(args.get(0)));
+            byte[] bytes = ScriptValueResolver.toBytes(args.get(0).evaluate());
             return HexUtil.toHex(bytes);
         }
 
         if (args.size() == 3) {
-            byte[] bytes = ScriptValueResolver.toBytes(evaluateExpression(args.get(0)));
-            int offset = ScriptValueResolver.toInt(evaluateExpression(args.get(1)));
-            int length = ScriptValueResolver.toInt(evaluateExpression(args.get(2)));
+            byte[] bytes = ScriptValueResolver.toBytes(args.get(0).evaluate());
+            int offset = ScriptValueResolver.toInt(args.get(1).evaluate());
+            int length = ScriptValueResolver.toInt(args.get(2).evaluate());
             return DumpByteReaders.hex(bytes, offset, length);
         }
 
@@ -1531,10 +1536,10 @@ final class ScriptFunctions {
         return out.toArray(new Integer[0]);
     }
 
-    private Integer[] parseCommandsFromArgLists(List<List<String>> args, int startIndex) throws Exception {
+    private Integer[] parseCommandsFromArgLists(List<ScriptArgument> args, int startIndex) throws Exception {
         List<Integer> out = new ArrayList<>();
         for (int i = startIndex; i < args.size(); i++) {
-            out.add(ScriptValueResolver.toInt(evaluateExpression(args.get(i))));
+            out.add(ScriptValueResolver.toInt(args.get(i).evaluate()));
         }
         return out.toArray(new Integer[0]);
     }
@@ -1757,7 +1762,7 @@ final class ScriptFunctions {
         throw new IllegalArgumentException("Value is not a payload/hex: " + value);
     }
 
-    private static boolean truthy(Object value) {
+    static boolean truthy(Object value) {
         if (value == null) {
             return false;
         }
@@ -1861,7 +1866,7 @@ final class ScriptFunctions {
         return args;
     }
 
-    private static void requireCallArgCount(String name, List<List<String>> args, int expected) {
+    private static void requireCallArgCount(String name, List<ScriptArgument> args, int expected) {
         if (args.size() != expected) {
             throw new IllegalArgumentException(
                     "Wrong number of arguments for " + name + ": expected " + expected + ", got " + args.size()
@@ -1870,105 +1875,11 @@ final class ScriptFunctions {
     }
 
     static boolean isExpressionStarter(String command) {
-        String normalized = normalizeFunctionName(command);
-        return switch (normalized) {
-            case "status", "connect", "disconnect", "gui-connect", "gui-disconnect",
-                 "reset-session", "ensure-session", "clear-frames", "handshake", "attach-session",
-                 "reconnect-session", "pause", "sleep", "save-text", "save-capture-read-blocks", "save-diff-report",
-                 "save-read-blocks",
-                 "handshake-init", "device-info", "system-info",
-                 "login", "read-block", "read-blocks", "read-config-blocks", "read-save-config",
-                 "read-block-index", "read-block-payload",
-                 "cmd", "payload", "raw", "payload-hex", "payload-ascii",
-                 "diff-bytes", "diff-u16le", "diff-report", "changed-offsets", "assembled-data",
-                 "decode-fir408-config", "fir408-safe-pings", "fir408-cmd56-readonly-sweep",
-                 "fir408-cmd56-readonly-offsets", "fir408-upload-test-fir",
-                 "send-payload", "tx", "write",
-                 "gui-capture", "gui-action-capture", "gui-begin-capture", "gui-end-capture",
-                 "capture-count", "capture-write-count", "capture-response-count",
-                 "capture-frame", "first-write", "last-write",
-                 "first-response", "last-response",
-                 "last-write-excluding", "writes-by-command", "frames-by-command", "responses-by-command",
-                 "writes-by-command-and-channel",
-                 "recent-writes", "recent-writes-excluding",
-                 "writes", "responses", "payload-series", "u16-series", "changing-offsets-across-writes", "len",
-                 "contains", "starts-with", "ends-with",
-                 "upper", "lower", "trim", "join", "at", "split", "replace",
-                 "u8", "u16le", "u32le", "ascii", "hex", "slice", "bytes" -> true;
-            default -> false;
-        };
+        return de.drremote.dsp408.dspd.DspdBuiltins.isExpressionStarter(command);
     }
 
     static String normalizeFunctionName(String name) {
-        if (name == null) {
-            return "";
-        }
-        String trimmed = name.trim();
-        if (trimmed.isEmpty()) {
-            return trimmed;
-        }
-        String key = trimmed.toLowerCase(Locale.ROOT);
-        return switch (key) {
-            case "readblock" -> "read-block";
-            case "readblocks" -> "read-blocks";
-            case "readconfigblocks" -> "read-config-blocks";
-            case "readsaveconfig" -> "read-save-config";
-            case "decodefir408config" -> "decode-fir408-config";
-            case "fir408safepings" -> "fir408-safe-pings";
-            case "fir408cmd56readonlysweep" -> "fir408-cmd56-readonly-sweep";
-            case "fir408cmd56readonlyoffsets" -> "fir408-cmd56-readonly-offsets";
-            case "fir408uploadtestfir" -> "fir408-upload-test-fir";
-            case "readblockindex" -> "read-block-index";
-            case "readblockpayload" -> "read-block-payload";
-            case "guiconnect" -> "gui-connect";
-            case "guidisconnect" -> "gui-disconnect";
-            case "ensuresession" -> "ensure-session";
-            case "resetsession" -> "reset-session";
-            case "clearframes" -> "clear-frames";
-            case "attachsession" -> "attach-session";
-            case "reconnectsession" -> "reconnect-session";
-            case "pauseforuser" -> "pause";
-            case "handshakeinit" -> "handshake-init";
-            case "deviceinfo" -> "device-info";
-            case "systeminfo" -> "system-info";
-            case "sendpayload" -> "send-payload";
-            case "payloadhex" -> "payload-hex";
-            case "payloadascii" -> "payload-ascii";
-            case "diffbytes" -> "diff-bytes";
-            case "diffu16le" -> "diff-u16le";
-            case "diffreport" -> "diff-report";
-            case "changedoffsets" -> "changed-offsets";
-            case "savetext" -> "save-text";
-            case "savediffreport" -> "save-diff-report";
-            case "savecapturereadblocks" -> "save-capture-read-blocks";
-            case "savereadblocks" -> "save-read-blocks";
-            case "assembleddata" -> "assembled-data";
-            case "guicapture" -> "gui-capture";
-            case "guiactioncapture" -> "gui-action-capture";
-            case "guibegincapture" -> "gui-begin-capture";
-            case "guiendcapture" -> "gui-end-capture";
-            case "capturecount" -> "capture-count";
-            case "capturewritecount" -> "capture-write-count";
-            case "captureresponsecount" -> "capture-response-count";
-            case "captureframe" -> "capture-frame";
-            case "firstwrite" -> "first-write";
-            case "lastwrite" -> "last-write";
-            case "firstresponse" -> "first-response";
-            case "lastresponse" -> "last-response";
-            case "lastwriteexcluding" -> "last-write-excluding";
-            case "writesbycommand" -> "writes-by-command";
-            case "framesbycommand" -> "frames-by-command";
-            case "responsesbycommand" -> "responses-by-command";
-            case "writesbycommandandchannel" -> "writes-by-command-and-channel";
-            case "recentwrites" -> "recent-writes";
-            case "recentwritesexcluding" -> "recent-writes-excluding";
-            case "payloadseries" -> "payload-series";
-            case "u16series" -> "u16-series";
-            case "changingoffsetsacrosswrites" -> "changing-offsets-across-writes";
-            case "startswith" -> "starts-with";
-            case "endswith" -> "ends-with";
-            default -> trimmed;
-        };
+        return de.drremote.dsp408.dspd.DspdBuiltins.normalizeFunctionName(name);
     }
 
     private static List<SniffedFrame> writesByCommand(GuiCaptureResult capture, int command) {

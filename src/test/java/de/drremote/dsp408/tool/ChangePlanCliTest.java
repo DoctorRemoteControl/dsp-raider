@@ -49,14 +49,14 @@ class ChangePlanCliTest {
         assertTrue(text().contains("Out2 Gain [READY]: -6.0 dB -> -3.0 dB"),text());
         assertTrue(text().contains("00 01 04 34 05 FA 00"),text());
         assertTrue(text().contains("0.001 ms"),text());
-        assertTrue(text().contains("Rundung: ja"),text());
+        assertTrue(text().contains("rounded: yes"),text());
         assertTrue(text().contains("InA Mute [BLOCKED]"),text());
         assertTrue(text().contains("ready=2 unchanged=1 blocked=1"),text());
-        assertTrue(text().contains("Rohwert Speicher: 220"),text());
+        assertTrue(text().contains("Storage raw value: 220"),text());
         String inferred=text().substring(text().indexOf("InA Mute [BLOCKED]"));
-        assertTrue(inferred.contains("Rohwert Speicher: 0"),inferred);
-        assertTrue(inferred.contains("Lesenachweis: INFERRED DSP408Controller/"),inferred);
-        assertTrue(inferred.contains("Schreibnachweis: CONFIRMED tracks-dsp-raider/"),inferred);
+        assertTrue(inferred.contains("Storage raw value: 0"),inferred);
+        assertTrue(inferred.contains("Read evidence: INFERRED DSP408Controller/"),inferred);
+        assertTrue(inferred.contains("Write evidence: CONFIRMED tracks-dsp-raider/"),inferred);
     }
 
     @Test void jsonPreviewPreservesRequestedPrecisionAndOmitsPayloadsForBlockedOrNoOpEntries() throws Exception {

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.drremote.dsp408.parameters.ParameterKind;
+import de.drremote.dsp408.parameters.ChannelNames;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -30,7 +31,7 @@ public final class ChangeRequestFiles {
         var result = new ArrayList<ParameterChange>();
         for (var entry : changes) {
             fields(entry, Set.of("channel", "parameter", "value"));
-            int channel = channel(text(entry, "channel"));
+            int channel = ChannelNames.index(text(entry, "channel"));
             String name = text(entry, "parameter");
             ParameterKind kind;
             try { kind = ParameterKind.valueOf(name.toUpperCase(Locale.ROOT)); }
@@ -60,11 +61,4 @@ public final class ChangeRequestFiles {
         return value.asText().strip();
     }
 
-    private static int channel(String name) {
-        for (int index = 0; index < 12; index++) {
-            String candidate = index < 4 ? "In" + (char) ('A' + index) : "Out" + (index - 3);
-            if (candidate.equalsIgnoreCase(name)) return index;
-        }
-        throw new IllegalArgumentException("Unknown channel: " + name);
-    }
 }

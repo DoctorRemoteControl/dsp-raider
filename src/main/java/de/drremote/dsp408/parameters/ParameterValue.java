@@ -4,6 +4,6 @@ public record ParameterValue(ParameterDefinition definition,Integer raw,Double v
     public enum Status { CONFIRMED, INFERRED, UNKNOWN, INVALID }
 
     public String display() {
-        return status==Status.CONFIRMED ? definition.kind().format(value) : "unbekannt ("+detail+")";
+        return status==Status.CONFIRMED ? definition.kind().format(value) : "unknown ("+detail+")";
     }
 }

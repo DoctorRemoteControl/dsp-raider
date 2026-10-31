@@ -31,10 +31,10 @@ class Fir408MemoryTest {
         String ina=report.lines().filter(line->line.startsWith("| InA |")).findFirst().orElseThrow();
         String ind=report.lines().filter(line->line.startsWith("| InD |")).findFirst().orElseThrow();
         String out8=report.lines().filter(line->line.startsWith("| Out8 |")).findFirst().orElseThrow();
-        assertTrue(ina.contains("unbekannt"),ina);
+        assertTrue(ina.contains("unknown"),ina);
         assertFalse(ina.contains("6525.5"),ina);assertFalse(ina.contains("682.66"),ina);
-        assertTrue(ina.contains("unbestätigte Lesezuordnung"),ina);
-        assertTrue(ind.endsWith("| AN |"),ind);assertTrue(out8.endsWith("| AN |"),out8);
+        assertTrue(ina.contains("unconfirmed read mapping"),ina);
+        assertTrue(ind.endsWith("| ON |"),ind);assertTrue(out8.endsWith("| ON |"),out8);
     }
 
     @Test void sameValuePingPlanPreservesExistingWriteSetAndExcludesMute() {

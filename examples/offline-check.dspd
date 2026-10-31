@@ -1,0 +1,17 @@
+// This example is checked, never executed by the check command.
+let name = "offline compiler example";
+print("${name}");
+
+for (let channel in 0..3) {
+    if (channel >= 0 and channel <= 3) {
+        print("channel=${channel}");
+    } else {
+        print("other");
+    }
+}
+
+// Device-dependent values may be checked symbolically without connecting.
+connect();
+let block = readBlock(0x00);
+print(block.payloadHex);
+disconnect();

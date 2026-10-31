@@ -14,6 +14,12 @@ import de.drremote.dsp408.snapshot.SnapshotFrames;
 import de.drremote.dsp408.planning.ChangePlanReport;
 import de.drremote.dsp408.planning.ChangePlanner;
 import de.drremote.dsp408.planning.ChangeRequestFiles;
+import de.drremote.dsp408.dspd.DspdCompiler;
+import de.drremote.dsp408.dspd.DspdCheckReport;
+import de.drremote.dsp408.script.CheckedDspScriptEngine;
+import de.drremote.dsp408.execution.ChangeApplier;
+import de.drremote.dsp408.execution.ApplyReport;
+import de.drremote.dsp408.execution.ApplyResult;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -27,13 +33,19 @@ import java.util.*;
 public final class DspRaiderCli {
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private final DspSessionFactory sessions;
+    private final ChangeApplier applier;
 
     public DspRaiderCli() {
         this((streamHost, streamPort, controlHost, controlPort, verbose) ->
                 new ProxyClient(ProxyConfig.of(streamHost, streamPort, controlHost, controlPort, null, verbose)));
     }
 
-    public DspRaiderCli(DspSessionFactory sessions) { this.sessions = Objects.requireNonNull(sessions); }
+    public DspRaiderCli(DspSessionFactory sessions) { this(sessions,new ChangeApplier()); }
+
+    public DspRaiderCli(DspSessionFactory sessions, ChangeApplier applier) {
+        this.sessions = Objects.requireNonNull(sessions);
+        this.applier = Objects.requireNonNull(applier);
+    }
 
     public static void main(String[] args) {
         int code = new DspRaiderCli().run(args, System.out, System.err);
@@ -42,13 +54,49 @@ public final class DspRaiderCli {
 
     public int run(String[] args, PrintStream out, PrintStream error) {
         Options options = null;
+        ApplyResult completedApplication = null;
         try {
             options = Options.parse(args);
             if (options.help()) { help(out); return 0; }
             Path output = options.path("out");
             if (output != null && Files.exists(output)) throw new IOException("Output already exists: " + output);
+            if(output != null && options.command().equals("apply")) validateOutputDestination(output);
             String text;
+            int resultCode = 0;
             switch (options.command()) {
+                case "apply" -> {
+                    var baseline=SnapshotFiles.read(options.path("in"));
+                    var request=ChangeRequestFiles.read(options.path("changes"));
+                    var prepared=ChangeApplier.prepare(baseline,request);
+                    ApplyResult applied=null;
+                    if(prepared.blockedCount()!=0)applied=ChangeApplier.blocked(prepared);
+                    else {
+                        try(var session=sessions.create(options.get("stream-host","127.0.0.1"),options.number("stream-port",19081),
+                                options.get("control-host","127.0.0.1"),options.number("control-port",19082),options.verbose())) {
+                            applied=applier.apply(session,baseline,request);
+                        } catch(Exception failure) {
+                            if(applied==null)throw failure;
+                            String original=applied.ok()?"":applied.error()+"; ";
+                            applied=new ApplyResult(false,applied.deviceVersion(),applied.entries(),original+"Session cleanup failed: "+failure.getMessage());
+                        }
+                    }
+                    completedApplication=applied;
+                    text=options.get("format","text").equals("json")?ApplyReport.json(applied):ApplyReport.text(applied);
+                    resultCode=applied.ok()?0:1;
+                }
+                case "run" -> {
+                    new CheckedDspScriptEngine(options.get("stream-host", "127.0.0.1"), options.number("stream-port",19081),
+                            options.get("control-host", "127.0.0.1"), options.number("control-port",19082), options.verbose(),sessions)
+                            .execute(options.path("in"),out);
+                    return 0;
+                }
+                case "check" -> {
+                    Path input = options.path("in");
+                    var result = DspdCompiler.compile(Files.readString(input, StandardCharsets.UTF_8));
+                    text = options.get("format", "text").equals("json") ? DspdCheckReport.json(input.toString(), result)
+                            : DspdCheckReport.text(input.toString(), result);
+                    resultCode = result.ok() ? 0 : 1;
+                }
                 case "plan" -> {
                     var snapshot = SnapshotFiles.read(options.path("in"));
                     for (var block : snapshot.blocks().entrySet())
@@ -90,12 +138,18 @@ public final class DspRaiderCli {
                 }
             }
             emit(text, output, out);
-            return 0;
+            return resultCode;
         } catch (IllegalArgumentException invalid) {
             error.println("Usage error: " + invalid.getMessage());
             error.println("Use --help for commands and options.");
             return 2;
         } catch (Exception failure) {
+            if(completedApplication != null) {
+                try {out.println(options.get("format","text").equals("json") ? ApplyReport.json(completedApplication) : ApplyReport.text(completedApplication));}
+                catch(Exception reportFailure) {out.println(ApplyReport.text(completedApplication));failure.addSuppressed(reportFailure);}
+                error.println("Application report could not be saved; full report is on stdout: " + failure.getMessage());
+                return 1;
+            }
             if (failure instanceof DumpFailedException partial && options != null) {
                 try { emit(partial.getResult().toJson(), options.path("out"), out); }
                 catch (Exception writeError) { failure.addSuppressed(writeError); }
@@ -104,6 +158,13 @@ public final class DspRaiderCli {
                     ? failure.getCause().getMessage() : failure.getMessage()));
             return 1;
         }
+    }
+
+    private static void validateOutputDestination(Path output) throws IOException {
+        Path parent=output.toAbsolutePath().getParent();
+        while(parent != null && !Files.exists(parent))parent=parent.getParent();
+        if(parent==null || !Files.isDirectory(parent) || !Files.isWritable(parent))
+            throw new IOException("Output parent is not a writable directory: " + parent);
     }
 
     private static void emit(String text, Path output, PrintStream out) throws IOException {
@@ -126,9 +187,12 @@ public final class DspRaiderCli {
                   decode --in snapshot-or-capture.json [--out report.md] [--lib field-library.json]
                   diff --before a.json --after b.json [--out diff.txt]
                   plan --in snapshot.json --changes changes.json [--format text|json] [--out preview.txt]
+                  check --in script.dspd [--format text|json] [--out check-report.txt]
+                  run --in script.dspd       Compile completely, then execute the checked AST
+                  apply --in baseline.json --changes changes.json [--format text|json] [--out result.txt]
                   capture --out frames.json [--duration-ms 5000]
 
-                Proxy options for connect/identify/dump:
+                Proxy options for connect/identify/dump/run/apply:
                   --stream-host HOST --stream-port PORT     Default: 127.0.0.1:19081
                   --control-host HOST --control-port PORT   Default: 127.0.0.1:19082
                   --verbose
@@ -136,12 +200,14 @@ public final class DspRaiderCli {
                 Dump accepts --end-block 0x1F to explicitly select a range for an unknown device.
                 Output files are created once. Existing files are never replaced.
                 Plan works offline and previews Gain/Mute/Delay changes without sending them.
-                All device commands above read data; they do not change presets or settings.
+                Check validates a complete DSPD script offline without executing any function.
+                Connect/identify/dump read device data. Run executes the script's actual operations.
+                Apply writes confirmed changes after checking fresh state, ACKs and readback.
                 """);
     }
 
     private record Options(String command, Map<String,String> values, boolean verbose, boolean help) {
-        private static final Set<String> COMMANDS = Set.of("connect","identify","dump","decode","diff","capture","plan");
+        private static final Set<String> COMMANDS = Set.of("connect","identify","dump","decode","diff","capture","plan","check","run","apply");
         private static final Set<String> NETWORK = Set.of("stream-host","stream-port","control-host","control-port","out");
 
         static Options parse(String[] args) {
@@ -152,9 +218,12 @@ public final class DspRaiderCli {
             var allowed = new HashSet<String>();
             switch(command) {
                 case "connect", "identify", "dump" -> allowed.addAll(NETWORK);
+                case "run" -> { allowed.addAll(NETWORK); allowed.remove("out"); allowed.add("in"); }
+                case "apply" -> { allowed.addAll(NETWORK); allowed.addAll(Set.of("in","changes","format")); }
                 case "decode" -> allowed.addAll(Set.of("in","out","lib"));
                 case "diff" -> allowed.addAll(Set.of("before","after","out"));
                 case "plan" -> allowed.addAll(Set.of("in","changes","format","out"));
+                case "check" -> allowed.addAll(Set.of("in","format","out"));
                 case "capture" -> allowed.addAll(Set.of("stream-host","stream-port","duration-ms","out"));
             }
             if (command.equals("dump")) allowed.add("end-block");
@@ -163,7 +232,7 @@ public final class DspRaiderCli {
             for (int index = 1; index < args.length; index++) {
                 String option = args[index];
                 if (option.equals("--help") || option.equals("-h")) { help = true; continue; }
-                if (option.equals("--verbose") && Set.of("connect","identify","dump").contains(command)) { verbose = true; continue; }
+                if (option.equals("--verbose") && Set.of("connect","identify","dump","run","apply").contains(command)) { verbose = true; continue; }
                 if (!option.startsWith("--") || !allowed.contains(option.substring(2)))
                     throw new IllegalArgumentException("Unknown option: " + option);
                 if (++index >= args.length || args[index].startsWith("--") || args[index].isBlank())
@@ -174,9 +243,10 @@ public final class DspRaiderCli {
             var result = new Options(command, Map.copyOf(values), verbose, help);
             if (help) return result;
             if (command.equals("decode")) result.require("in");
+            if (command.equals("run")) result.require("in");
             if (command.equals("diff")) { result.require("before"); result.require("after"); }
-            if (command.equals("plan")) {
-                result.require("in"); result.require("changes");
+            if (Set.of("plan","check","apply").contains(command)) {
+                result.require("in"); if (!command.equals("check")) result.require("changes");
                 if (!Set.of("text", "json").contains(result.get("format", "text")))
                     throw new IllegalArgumentException("--format must be text or json");
             }

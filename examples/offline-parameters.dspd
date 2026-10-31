@@ -1,0 +1,13 @@
+// Run from the tracks-dsp-raider project directory.
+let snapshot = loadSnapshot("src/test/resources/live/fir408-v0113p-20261031.json");
+let gainValue = parameter(snapshot, "Out2", "gain");
+assert(gainValue.status == "CONFIRMED");
+print("Out2 gain=${gainValue.value} ${gainValue.unit}");
+let change = planChange(snapshot, "Out2", "gain", -3.04);
+assert(change.status == "READY");
+assert(change.rounded);
+print("Prepared payload=${change.payloadHex}");
+let muteValue = parameter(snapshot, "InA", "mute");
+assert(muteValue.status == "INFERRED");
+assert(muteValue.value == null);
+print("InA mute remains ${muteValue.status}");

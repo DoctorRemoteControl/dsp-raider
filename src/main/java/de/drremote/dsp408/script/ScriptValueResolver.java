@@ -7,6 +7,10 @@ import de.drremote.dsp408.model.ReadBlockSet;
 import de.drremote.dsp408.model.SniffedFrame;
 import de.drremote.dsp408.util.DspProtocol;
 import de.drremote.dsp408.util.HexUtil;
+import de.drremote.dsp408.parameters.ParameterValue;
+import de.drremote.dsp408.planning.ChangePlan;
+import de.drremote.dsp408.execution.ApplyResult;
+import de.drremote.dsp408.snapshot.Snapshot;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -133,6 +137,44 @@ final class ScriptValueResolver {
     }
 
     Object resolveProperty(Object current, String property) {
+        if(current instanceof Snapshot snapshot) return switch(property) {
+            case "deviceVersion" -> snapshot.identity().version();
+            case "deviceProfile" -> snapshot.identity().profile();
+            default -> throw new IllegalArgumentException("Unknown snapshot property: "+property);
+        };
+        if(current instanceof ParameterValue value) return switch(property) {
+            case "value" -> value.value();
+            case "raw" -> value.raw();
+            case "status" -> value.status().name();
+            case "channel" -> value.definition().channel();
+            case "unit" -> value.definition().kind().unit();
+            case "detail" -> value.detail();
+            default -> throw new IllegalArgumentException("Unknown parameter property: "+property);
+        };
+        if(current instanceof ChangePlan.Entry entry) return switch(property) {
+            case "status" -> entry.status().name();
+            case "before" -> entry.before();
+            case "targetValue" -> entry.change().targetValue();
+            case "requestedValue" -> entry.change().value();
+            case "rounded" -> entry.change().value()!=entry.change().targetValue();
+            case "payloadHex" -> entry.payloadHex();
+            case "reason" -> entry.reason();
+            default -> throw new IllegalArgumentException("Unknown change property: "+property);
+        };
+        if(current instanceof ApplyResult result) return switch(property) {
+            case "ok" -> result.ok();
+            case "deviceVersion" -> result.deviceVersion();
+            case "entries" -> result.entries();
+            case "error" -> result.error();
+            default -> throw new IllegalArgumentException("Unknown apply property: "+property);
+        };
+        if(current instanceof ApplyResult.Entry entry) return switch(property) {
+            case "status" -> entry.status().name();
+            case "readback" -> entry.readback();
+            case "writeAttempted" -> entry.writeAttempted();
+            case "detail" -> entry.detail();
+            default -> throw new IllegalArgumentException("Unknown apply entry property: "+property);
+        };
         if (current instanceof ProxyResponse response) {
             return switch (property) {
                 case "raw" -> response.raw();
@@ -319,7 +361,7 @@ final class ScriptValueResolver {
         return current;
     }
 
-    private static Object applySingleIndex(Object current, int index) {
+    static Object applySingleIndex(Object current, int index) {
         if (index < 0) {
             throw new IllegalArgumentException("Index < 0: " + index);
         }

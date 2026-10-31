@@ -59,7 +59,7 @@ public enum ParameterKind {
         return switch(this) {
             case GAIN -> String.format(Locale.ROOT,"%.1f dB",value);
             case DELAY -> String.format(Locale.ROOT,"%.3f ms",value);
-            case MUTE -> value==1 ? "AN" : "AUS";
+            case MUTE -> value==1 ? "ON" : "OFF";
         };
     }
 }
