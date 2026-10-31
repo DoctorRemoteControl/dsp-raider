@@ -90,15 +90,15 @@ Results expose status/value/quantization and application success to scripts.
 Files: maintained READMEs/guides, `.gitattributes`, `.editorconfig`, ignore rules,
 contribution instructions and actual component lock revisions where applicable.
 
-- [ ] Finish delegated English translation; update syntax/CLI/workflows/roadmap
+- [x] Finish delegated English translation; update syntax/CLI/workflows/roadmap
   for actual completed behavior and offline executable examples.
-- [ ] Adopt preservation-safe line-ending policy; keep generated artifacts out
+- [x] Adopt preservation-safe line-ending policy; keep generated artifacts out
   of new commits, preserve already tracked historical files.
-- [ ] Run packaged CLI offline examples, links/fences/JSON validation, source-
+- [x] Run packaged CLI offline examples, links/fences/JSON validation, source-
   evidence hash comparison and repository-state audit.
-- [ ] Review the full change with an independent reviewer; fix substantive
+- [x] Review the full change with an independent reviewer; fix substantive
   findings with regression tests, then rerun the reactor.
-- [ ] Make focused local commits and update workspace lock to actual component
+- [x] Make focused local commits and update workspace lock to actual component
   commits, without adding unrelated Controller edits or pushing.
 
 ## Execution ledger
@@ -134,3 +134,14 @@ Git integration are verified by the parent after code review — real-device
 behavior and external races remain unproven, as documented in EXECUTION.md.
 
 Implementation commit: `cc23a75` (51 focused source/test/example files).
+
+Task 1: complete (implementation cc23a75; tests: full Raider verify → 254/254).
+Task 2: complete (implementation cc23a75; tests: full Raider verify → 254/254).
+Task 3: complete (implementation cc23a75; end-to-end checked apply and review
+regressions included; full working reactor verification successful).
+Task 4: complete (English docs/Git commits 23659c2, 4047df1, 5488bc7, 815025a;
+clean local checkout at locked revisions → 12 projects, 368 tests, no failures;
+19 maintained documents and 168 local links pass). No deferred minor findings.
+
+Final evidence: `/home/xla/drremote/.codex-backups/dsp-execution-20261031-6us72pyc/REPORT.md`.
+Original library/Controller edits remain unchanged; no push was performed.
